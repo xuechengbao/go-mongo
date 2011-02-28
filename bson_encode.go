@@ -25,6 +25,7 @@ import (
 var (
 	typeDoc      = reflect.Typeof(Doc{})
 	typeBSONData = reflect.Typeof(BSONData{})
+	idKey        = reflect.NewValue("_id")
 )
 
 // EncodeTypeError is the error indicating that Encode could not encode an input type.
@@ -118,9 +119,9 @@ func Encode(buf []byte, doc interface{}) (result []byte, err os.Error) {
 	default:
 		switch v := v.(type) {
 		case *reflect.StructValue:
-			e.writeStruct(v)
+			e.writeStruct(v, true)
 		case *reflect.MapValue:
-			e.writeMap(v)
+			e.writeMap(v, true)
 		default:
 			return nil, &EncodeTypeError{v.Type()}
 		}
@@ -149,16 +150,26 @@ func (e *encodeState) writeKindName(kind int, name string) {
 	e.WriteByte(0)
 }
 
-func (e *encodeState) writeStruct(v *reflect.StructValue) {
+func (e *encodeState) writeStruct(v *reflect.StructValue, topLevel bool) {
 	offset := e.beginDoc()
-	for name, f := range compileStruct(v.Type().(*reflect.StructType)) {
-		e.encodeValue(name, v.FieldByIndex(f.Index))
+	fieldIndex := fieldIndex(v.Type().(*reflect.StructType))
+	skipId := false
+	if topLevel {
+		if index, found := fieldIndex["_id"]; found {
+			skipId = true
+			e.encodeValue("_id", v.FieldByIndex(index))
+		}
+	}
+	for name, index := range fieldIndex {
+		if !skipId || name != "_id" {
+			e.encodeValue(name, v.FieldByIndex(index))
+		}
 	}
 	e.WriteByte(0)
 	e.endDoc(offset)
 }
 
-func (e *encodeState) writeMap(v *reflect.MapValue) {
+func (e *encodeState) writeMap(v *reflect.MapValue, topLevel bool) {
 	if v.IsNil() {
 		return
 	}
@@ -166,8 +177,19 @@ func (e *encodeState) writeMap(v *reflect.MapValue) {
 		e.abort(&EncodeTypeError{v.Type()})
 	}
 	offset := e.beginDoc()
+	skipId := false
+	if topLevel {
+		idValue := v.Elem(idKey)
+		if idValue != nil {
+			skipId = true
+			e.encodeValue("_id", idValue)
+		}
+	}
 	for _, k := range v.Keys() {
-		e.encodeValue(k.(*reflect.StringValue).Get(), v.Elem(k))
+		sk := k.(*reflect.StringValue).Get()
+		if !skipId || sk != "_id" {
+			e.encodeValue(sk, v.Elem(k))
+		}
 	}
 	e.WriteByte(0)
 	e.endDoc(offset)
@@ -261,8 +283,8 @@ func encodeBSONData(e *encodeState, name string, value reflect.Value) {
 }
 
 func encodeCodeWithScope(e *encodeState, name string, value reflect.Value) {
-	e.writeKindName(kindCodeWithScope, name)
 	c := value.Interface().(CodeWithScope)
+	e.writeKindName(kindCodeWithScope, name)
 	offset := e.beginDoc()
 	e.WriteUint32(uint32(len(c.Code) + 1))
 	e.WriteString(c.Code)
@@ -289,14 +311,14 @@ func encodeMinMax(e *encodeState, name string, value reflect.Value) {
 
 func encodeStruct(e *encodeState, name string, value reflect.Value) {
 	e.writeKindName(kindDocument, name)
-	e.writeStruct(value.(*reflect.StructValue))
+	e.writeStruct(value.(*reflect.StructValue), false)
 }
 
 func encodeMap(e *encodeState, name string, value reflect.Value) {
 	v := value.(*reflect.MapValue)
 	if !v.IsNil() {
 		e.writeKindName(kindDocument, name)
-		e.writeMap(v)
+		e.writeMap(v, false)
 	}
 }
 

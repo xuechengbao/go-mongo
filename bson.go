@@ -15,12 +15,12 @@
 package mongo
 
 import (
+	"crypto/rand"
+	"encoding/binary"
 	"reflect"
 	"strconv"
 	"sync"
-	"crypto/rand"
 	"time"
-	"encoding/binary"
 )
 
 // DateTime represents a BSON timestamp. The value is in milliseconds since the
@@ -99,7 +99,7 @@ func nextOidCounter() uint64 {
 }
 
 // BSONData represents a chunk of uninterpreted BSON data. Use this type to
-// copy raw data into our out of a BSON encoding.
+// copy raw data into or out of a BSON encoding.
 type BSONData struct {
 	Kind int
 	Data []byte
@@ -111,11 +111,18 @@ type Symbol string
 // Code represents Javascript code in BSON.
 type Code string
 
-// Doc represents a BSON document. Use Doc instead of a native Go map when the
-// order of the key-value pairs is important.
-type Doc []struct {
+type DocItem struct {
 	Key   string
 	Value interface{}
+}
+
+// Doc represents a BSON document. Use Doc when the order of the key-value
+// pairs is important.
+type Doc []DocItem
+
+// Append adds an item to doc.
+func (d *Doc) Append(name string, value interface{}) {
+	*d = append(*d, DocItem{name, value})
 }
 
 // MinMax represents either a minimum or maximum BSON value.
@@ -178,19 +185,66 @@ func kindName(kind int) string {
 	return name
 }
 
-func compileStruct(t *reflect.StructType) map[string]reflect.StructField {
-	m := make(map[string]reflect.StructField)
+func compileFieldIndex(t *reflect.StructType, depth map[string]int, index []int, fieldIndex map[string][]int) {
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
-		if f.PkgPath != "" {
-			// ignore if not exported
-			continue
+		switch {
+		case f.PkgPath != "":
+			// Ignore unexported fields.
+		case f.Anonymous:
+			// TODO: Handle pointers. Requires change to decoder and 
+			// protection against infinite recursion.
+			if t, ok := f.Type.(*reflect.StructType); ok {
+				compileFieldIndex(t, depth, append(index, i), fieldIndex)
+			}
+		default:
+			name := f.Name
+			if f.Tag != "" {
+				name = f.Tag
+			}
+			d, found := depth[name]
+			if !found {
+				d = 1 << 30
+			}
+			switch {
+			case len(index) == d:
+				// At same depth, remove from result.
+				fieldIndex[name] = nil, false
+			case len(index) < d:
+				findex := make([]int, len(index)+1)
+				copy(findex, index)
+				findex[len(index)] = i
+				depth[name] = len(index)
+				fieldIndex[name] = findex
+			}
 		}
-		name := f.Name
-		if f.Tag != "" {
-			name = f.Tag
-		}
-		m[name] = f
 	}
-	return m
+}
+
+var (
+	fieldIndexMutex sync.RWMutex
+	fieldIndexCache = make(map[*reflect.StructType]map[string][]int)
+)
+
+// fieldIndex returns the name to index map for the fields in t.
+func fieldIndex(t *reflect.StructType) map[string][]int {
+
+	fieldIndexMutex.RLock()
+	fieldIndex := fieldIndexCache[t]
+	fieldIndexMutex.RUnlock()
+	if fieldIndex != nil {
+		return fieldIndex
+	}
+
+	fieldIndexMutex.Lock()
+	defer fieldIndexMutex.Unlock()
+	fieldIndex = fieldIndexCache[t]
+	if fieldIndex != nil {
+		return fieldIndex
+	}
+
+	fieldIndex = make(map[string][]int)
+	compileFieldIndex(t, make(map[string]int), nil, fieldIndex)
+	fieldIndexCache[t] = fieldIndex
+	return fieldIndex
 }

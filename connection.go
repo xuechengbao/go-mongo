@@ -375,10 +375,10 @@ func (r *cursor) Close() os.Error {
 	if r.err != nil {
 		return nil
 	}
-	if r.requestId != 0 {
+	if r.requestId != 0 && r.conn.err == nil {
 		r.conn.cursors[r.requestId] = nil, false
 	}
-	if r.cursorId != 0 {
+	if r.cursorId != 0 && r.conn.err == nil {
 		r.conn.killCursors(r.cursorId)
 	}
 	r.err = os.NewError("mongo: cursor closed")

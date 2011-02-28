@@ -23,7 +23,7 @@ func dialAndDrop(t *testing.T, db string) Conn {
 	if err != nil {
 		t.Fatal("dial", err)
 	}
-	_, err = RunCommand(c, db, "dropDatabase")
+	err = RunCommand(c, db, Doc{{"dropDatabase", 1}}, nil)
 	if err != nil {
 		c.Close()
 		t.Fatal("drop", err)
@@ -103,10 +103,11 @@ func TestTailableCursor(t *testing.T) {
 	c := dialAndDrop(t, "go-mongo-test")
 	defer c.Close()
 
-	_, err := RunCommand(c, "go-mongo-test",
+	err := RunCommand(c, "go-mongo-test",
 		Doc{{"create", "capped"},
 			{"capped", true},
-			{"size", 1000.0}})
+			{"size", 1000.0}},
+		nil)
 	if err != nil {
 		t.Fatal("create capped", err)
 	}
@@ -145,4 +146,59 @@ func TestTailableCursor(t *testing.T) {
 		}
 
 	}
+}
+
+func TestStuff(t *testing.T) {
+	c := dialAndDrop(t, "go-mongo-test")
+	defer c.Close()
+	c = SafeConn{c, nil}
+
+	id := NewObjectId()
+	err := c.Insert("go-mongo-test.test", map[string]interface{}{"_id": id, "x": 1})
+	if err != nil {
+		t.Fatal("insert", err)
+	}
+
+	var m map[string]interface{}
+	err = FindOne(c, "go-mongo-test.test", map[string]interface{}{"_id": id}, nil, &m)
+	if err != nil {
+		t.Fatal("findone", err)
+	}
+
+	err = c.Update("go-mongo-test.test",
+		map[string]interface{}{"_id": id},
+		map[string]interface{}{"$inc": map[string]interface{}{"x": 1}}, nil)
+	if err != nil {
+		t.Fatal("update", err)
+	}
+
+	m = nil
+	err = FindOne(c, "go-mongo-test.test", map[string]interface{}{"_id": id}, nil, &m)
+	if err != nil {
+		t.Fatal("findone after update", err)
+	}
+
+	if m["x"] != 2 {
+		t.Fatal("expect x = 2, got", m["x"])
+	}
+
+	err = c.Remove("go-mongo-test.test", map[string]interface{}{"_id": id}, nil)
+	if err != nil {
+		t.Fatal("remove", err)
+	}
+
+	m = nil
+	err = FindOne(c, "go-mongo-test.test", map[string]interface{}{"_id": id}, nil, &m)
+	if err != EOF {
+		t.Fatal("findone, expect EOF, got", err)
+	}
+
+	// Don't panic of connection closed before cursor.
+	r, err := c.Find("go-mongo-test.test", Doc{}, nil)
+	if err != nil {
+		t.Fatal("find", err)
+	}
+	c.Close()
+	r.HasNext()
+	r.Close()
 }

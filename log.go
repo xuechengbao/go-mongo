@@ -32,41 +32,41 @@ func newLogId() int {
 	return logId
 }
 
-// NewLoggerConn returns logging wrapper around a connection.
-func NewLoggerConn(conn Conn) Conn {
-	return logConn{conn, newLogId()}
+// NewLoggingConn returns logging wrapper around a connection.
+func NewLoggingConn(conn Conn) Conn {
+	return loggingConn{conn, newLogId()}
 }
 
-type logConn struct {
+type loggingConn struct {
 	Conn
 	id int
 }
 
-func (c logConn) Close() os.Error {
+func (c loggingConn) Close() os.Error {
 	err := c.Conn.Close()
 	log.Printf("%d.Close() (err: %v)", c.id, err)
 	return err
 }
 
-func (c logConn) Update(namespace string, selector, update interface{}, options *UpdateOptions) os.Error {
+func (c loggingConn) Update(namespace string, selector, update interface{}, options *UpdateOptions) os.Error {
 	err := c.Conn.Update(namespace, selector, update, options)
 	log.Printf("%d.Update(namespace, %+v, %+v, %+v) (%v)", c.id, namespace, selector, update, options, err)
 	return err
 }
 
-func (c logConn) Insert(namespace string, documents ...interface{}) os.Error {
+func (c loggingConn) Insert(namespace string, documents ...interface{}) os.Error {
 	err := c.Conn.Insert(namespace, documents...)
 	log.Printf("%d.Insert(%s, %+v) (%v)", c.id, namespace, documents, err)
 	return err
 }
 
-func (c logConn) Remove(namespace string, selector interface{}, options *RemoveOptions) os.Error {
+func (c loggingConn) Remove(namespace string, selector interface{}, options *RemoveOptions) os.Error {
 	err := c.Conn.Remove(namespace, selector, options)
 	log.Printf("%d.Remove(%s, %+v, %+v) (%v)", c.id, namespace, selector, options, err)
 	return err
 }
 
-func (c logConn) Find(namespace string, query interface{}, options *FindOptions) (Cursor, os.Error) {
+func (c loggingConn) Find(namespace string, query interface{}, options *FindOptions) (Cursor, os.Error) {
 	r, err := c.Conn.Find(namespace, query, options)
 	var id int
 	if r != nil {

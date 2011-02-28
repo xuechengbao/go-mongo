@@ -94,6 +94,16 @@ type stStringArray struct {
 	Test [1]string "test"
 }
 
+type stId struct {
+	Test int "test"
+	Id   int "_id"
+}
+
+type stEmbed struct {
+	stInt32
+	Id int "_id"
+}
+
 var bsonTests = []struct {
 	psv  interface{}
 	sv   interface{}
@@ -149,6 +159,10 @@ var bsonTests = []struct {
 	{new(BSONData), BSONData{Kind: kindDocument, Data: []byte("\x15\x00\x00\x00\x02test\x00\x06\x00\x00\x00world\x00\x00")},
 		testMap("world"),
 		[]byte("\x15\x00\x00\x00\x02test\x00\x06\x00\x00\x00world\x00\x00")},
+	{new(stId), stId{Test: 2, Id: 1}, map[string]interface{}{"test": 2, "_id": 1},
+		[]byte("\x18\x00\x00\x00\x10_id\x00\x01\x00\x00\x00\x10test\x00\x02\x00\x00\x00\x00")},
+	{new(stEmbed), stEmbed{stInt32: stInt32{2}, Id: 1}, map[string]interface{}{"test": 2, "_id": 1},
+		[]byte("\x18\x00\x00\x00\x10_id\x00\x01\x00\x00\x00\x10test\x00\x02\x00\x00\x00\x00")},
 }
 
 func TestEncodeMap(t *testing.T) {

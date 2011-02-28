@@ -26,18 +26,18 @@ var (
 
 // RemoveOptions specifies options for the Conn.Remove method.
 type RemoveOptions struct {
-	// If set, the database will remove only the first matching document in the
+	// If true, then the database will remove only the first matching document in the
 	// collection. Otherwise all matching documents will be removed.
 	Single bool
 }
 
 // UpdateOptions specifies options for the Conn.Update method.
 type UpdateOptions struct {
-	// If set, the database will insert the supplied object into the collection
-	// if no matching document is found.
+	// If true, then the database will insert the supplied object into the
+	// collection if no matching document is found.
 	Upsert bool
 
-	// If set, the database will update all objects matching the query.
+	// If true, then the database will update all objects matching the query.
 	Multi bool
 }
 

@@ -59,9 +59,9 @@ func (e *DecodeTypeError) String() string {
 //      Boolean             -> bool
 //      Datetime            -> mongo.Datetime, int64
 //      Document            -> map[string]interface{}, struct types
-//      Double              -> float64, float32, int, int32, int64
+//      Double              -> float64, float32, int, int32, int64, bool
 //      MinValue, MaxValue  -> mongo.MinMax
-//      ObjectID            -> mongo.ObjectID
+//      ObjectID            -> mongo.ObjectId
 //      Symbol              -> mongo.Symbol, string
 //      Timestamp           -> mongo.Timestamp, int64
 //      string              -> string
@@ -356,6 +356,8 @@ func decodeBool(d *decodeState, kind int, value reflect.Value) {
 		b = d.scanInt32() != 0
 	case kindInt64:
 		b = d.scanInt64() != 0
+	case kindFloat:
+		b = d.scanFloat() != 0
 	}
 	value.(*reflect.BoolValue).Set(b)
 }
@@ -476,7 +478,7 @@ func decodeArray(d *decodeState, kind int, value reflect.Value) {
 func decodeStruct(d *decodeState, kind int, value reflect.Value) {
 	v := value.(*reflect.StructValue)
 	t := v.Type().(*reflect.StructType)
-	m := compileStruct(t)
+	fieldIndex := fieldIndex(t)
 	offset := d.beginDoc()
 	for {
 		kind, name := d.scanKindName()
@@ -486,8 +488,8 @@ func decodeStruct(d *decodeState, kind int, value reflect.Value) {
 		if kind == kindNull {
 			continue
 		}
-		if f, ok := m[string(name)]; ok {
-			d.decodeValue(kind, v.FieldByIndex(f.Index))
+		if index, ok := fieldIndex[string(name)]; ok {
+			d.decodeValue(kind, v.FieldByIndex(index))
 		} else {
 			d.skipValue(kind)
 		}
