@@ -89,7 +89,7 @@ type encodeState struct {
 //
 // Other types including channels, complex and function values cannot be encoded.
 //
-// BSON cannot represent cyclic data structurs and Encode does not handle them.
+// BSON cannot represent cyclic data structure and Encode does not handle them.
 // Passing cyclic structures to Encode will result in an infinite recursion.
 func Encode(buf []byte, doc interface{}) (result []byte, err os.Error) {
 	defer func() {

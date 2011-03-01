@@ -45,7 +45,7 @@ type UpdateOptions struct {
 type FindOptions struct {
 	// Optional document that limits the fields in the returned documents.
 	// Fields contains one or more elements, each of which is the name of a
-	// field that should be returned, and and the integer value 1. 
+	// field that should be returned, and the integer value 1. 
 	Fields interface{}
 
 	// Tailable means cursor is not closed when the last data is retrieved.
@@ -110,7 +110,7 @@ type Conn interface {
 	// Insert documents.
 	Insert(namespace string, documents ...interface{}) os.Error
 
-	// Remove documents specified by seletor.
+	// Remove documents specified by selector.
 	Remove(namespace string, selector interface{}, options *RemoveOptions) os.Error
 
 	// Find documents specified by selector. The returned cursor must be closed.

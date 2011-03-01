@@ -35,7 +35,7 @@ func (e *DecodeConvertError) String() string {
 	return "bson: could not decode " + kindName(e.kind) + " to " + e.t.String()
 }
 
-// DecodeTypeError is returned when the deocoder encounters an unknown type in
+// DecodeTypeError is returned when the decoder encounters an unknown type in
 // the input.
 type DecodeTypeError struct {
 	kind int

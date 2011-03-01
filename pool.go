@@ -52,8 +52,8 @@ type pooledConnection struct {
 	pool *Pool
 }
 
-// NewDialPool returns a new connetion pool. The pool uses mongo.Dial to
-// create new connections and maintains a maximum of maxIdle connetions.
+// NewDialPool returns a new connection pool. The pool uses mongo.Dial to
+// create new connections and maintains a maximum of maxIdle connections.
 func NewDialPool(addr string, maxIdle int) *Pool {
 	return NewPool(func() (Conn, os.Error) { return Dial(addr) }, maxIdle)
 }

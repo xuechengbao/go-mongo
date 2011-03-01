@@ -23,7 +23,7 @@ import (
 	"time"
 )
 
-// DateTime represents a BSON timestamp. The value is in milliseconds since the
+// DateTime represents a BSON datetime. The value is in milliseconds since the
 // Unix epoch.
 type DateTime int64
 
@@ -54,13 +54,13 @@ type Regexp struct {
 // are zero, then the object id is not encoded to BSON.
 type ObjectId [12]byte
 
-// NewObjectId returns a new object id. This funtion uses the following format
+// NewObjectId returns a new object id. This function uses the following format
 // for object ids:
 //
 //  [0:4]  Time since epoch in seconds. This is compatible 
 //         with other drivers.
 // 
-//  [4:12] Incrementing counter intialized with crypto random
+//  [4:12] Incrementing counter initialized with crypto random
 //         number. This ensures that object ids are unique, but
 //         is simpler than the format used by other drivers.
 func NewObjectId() ObjectId {
