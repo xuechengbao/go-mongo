@@ -108,116 +108,116 @@ var bsonTests = []struct {
 	psv  interface{}
 	sv   interface{}
 	mv   map[string]interface{}
-	data []byte
+	data string
 }{
 	{new(stEmpty), stEmpty{}, map[string]interface{}{},
-		[]byte("\x05\x00\x00\x00\x00")},
+		"\x05\x00\x00\x00\x00"},
 	{new(stFloat64), stFloat64{1.5}, testMap(float64(1.5)),
-		[]byte("\x13\x00\x00\x00\x01test\x00\x00\x00\x00\x00\x00\x00\xf8?\x00")},
+		"\x13\x00\x00\x00\x01test\x00\x00\x00\x00\x00\x00\x00\xf8?\x00"},
 	{new(stString), stString{"world"}, testMap("world"),
-		[]byte("\x15\x00\x00\x00\x02test\x00\x06\x00\x00\x00world\x00\x00")},
+		"\x15\x00\x00\x00\x02test\x00\x06\x00\x00\x00world\x00\x00"},
 	{new(stAny), stAny{"world"}, testMap("world"),
-		[]byte("\x15\x00\x00\x00\x02test\x00\x06\x00\x00\x00world\x00\x00")},
+		"\x15\x00\x00\x00\x02test\x00\x06\x00\x00\x00world\x00\x00"},
 	{new(stDoc), stDoc{make(map[string]interface{})}, testMap(make(map[string]interface{})),
-		[]byte("\x10\x00\x00\x00\x03test\x00\x05\x00\x00\x00\x00\x00")},
+		"\x10\x00\x00\x00\x03test\x00\x05\x00\x00\x00\x00\x00"},
 	{new(stBinary), stBinary{[]byte("test")}, testMap([]byte("test")),
-		[]byte("\x14\x00\x00\x00\x05\x74\x65\x73\x74\x00\x04\x00\x00\x00\x00\x74\x65\x73\x74\x00")},
+		"\x14\x00\x00\x00\x05\x74\x65\x73\x74\x00\x04\x00\x00\x00\x00\x74\x65\x73\x74\x00"},
 	{new(stObjectId), stObjectId{ObjectId{0x4C, 0x9B, 0x8F, 0xB4, 0xA3, 0x82, 0xAA, 0xFE, 0x17, 0xC8, 0x6E, 0x63}},
 		testMap(ObjectId{0x4C, 0x9B, 0x8F, 0xB4, 0xA3, 0x82, 0xAA, 0xFE, 0x17, 0xC8, 0x6E, 0x63}),
-		[]byte("\x17\x00\x00\x00\x07test\x00\x4C\x9B\x8F\xB4\xA3\x82\xAA\xFE\x17\xC8\x6E\x63\x00")},
+		"\x17\x00\x00\x00\x07test\x00\x4C\x9B\x8F\xB4\xA3\x82\xAA\xFE\x17\xC8\x6E\x63\x00"},
 	{new(stObjectId), stObjectId{ObjectId{}},
 		map[string]interface{}{},
-		[]byte("\x05\x00\x00\x00\x00")},
+		"\x05\x00\x00\x00\x00"},
 	{new(stBool), stBool{true}, testMap(true),
-		[]byte("\x0C\x00\x00\x00\x08test\x00\x01\x00")},
+		"\x0C\x00\x00\x00\x08test\x00\x01\x00"},
 	{new(stBool), stBool{false}, testMap(false),
-		[]byte("\x0C\x00\x00\x00\x08test\x00\x00\x00")},
+		"\x0C\x00\x00\x00\x08test\x00\x00\x00"},
 	{new(stSymbol), stSymbol{Symbol("aSymbol")}, testMap(Symbol("aSymbol")),
-		[]byte("\x17\x00\x00\x00\x0Etest\x00\x08\x00\x00\x00aSymbol\x00\x00")},
+		"\x17\x00\x00\x00\x0Etest\x00\x08\x00\x00\x00aSymbol\x00\x00"},
 	{new(stInt32), stInt32{10}, testMap(10),
-		[]byte("\x0F\x00\x00\x00\x10test\x00\x0A\x00\x00\x00\x00")},
+		"\x0F\x00\x00\x00\x10test\x00\x0A\x00\x00\x00\x00"},
 	{new(stInt64), stInt64{256}, testMap(int64(256)),
-		[]byte("\x13\x00\x00\x00\x12test\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00")},
+		"\x13\x00\x00\x00\x12test\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00"},
 	{new(stMinMax), stMinMax{MaxValue}, testMap(MaxValue),
-		[]byte("\x0B\x00\x00\x00\x7Ftest\x00\x00")},
+		"\x0B\x00\x00\x00\x7Ftest\x00\x00"},
 	{new(stMinMax), stMinMax{MinValue}, testMap(MinValue),
-		[]byte("\x0B\x00\x00\x00\xFFtest\x00\x00")},
+		"\x0B\x00\x00\x00\xFFtest\x00\x00"},
 	{nil, stRegexp{Regexp{"a*b", "i"}}, testMap(Regexp{"a*b", "i"}),
-		[]byte("\x11\x00\x00\x00\vtest\x00a*b\x00i\x00\x00")},
+		"\x11\x00\x00\x00\vtest\x00a*b\x00i\x00\x00"},
 	{nil, stCodeWithScope{CodeWithScope{"test", nil}}, testMap(CodeWithScope{"test", nil}),
-		[]byte("\x1d\x00\x00\x00\x0ftest\x00\x12\x00\x00\x00\x05\x00\x00\x00test\x00\x05\x00\x00\x00\x00\x00")},
+		"\x1d\x00\x00\x00\x0ftest\x00\x12\x00\x00\x00\x05\x00\x00\x00test\x00\x05\x00\x00\x00\x00\x00"},
 	{new(stTimestamp), stTimestamp{1168216211000}, testMap(Timestamp(1168216211000)),
-		[]byte("\x13\x00\x00\x00\x11test\x008\xbe\x1c\xff\x0f\x01\x00\x00\x00")},
+		"\x13\x00\x00\x00\x11test\x008\xbe\x1c\xff\x0f\x01\x00\x00\x00"},
 	{new(stDateTime), stDateTime{1168216211000}, testMap(DateTime(1168216211000)),
-		[]byte("\x13\x00\x00\x00\ttest\x008\xbe\x1c\xff\x0f\x01\x00\x00\x00")},
+		"\x13\x00\x00\x00\ttest\x008\xbe\x1c\xff\x0f\x01\x00\x00\x00"},
 	{new(stStringSlice), stStringSlice{[]string{}}, testMap([]interface{}{}),
-		[]byte("\x10\x00\x00\x00\x04test\x00\x05\x00\x00\x00\x00\x00")},
+		"\x10\x00\x00\x00\x04test\x00\x05\x00\x00\x00\x00\x00"},
 	{new(stStringSlice), stStringSlice{[]string{"hello"}}, testMap([]interface{}{"hello"}),
-		[]byte("\x1d\x00\x00\x00\x04test\x00\x12\x00\x00\x00\x020\x00\x06\x00\x00\x00hello\x00\x00\x00")},
+		"\x1d\x00\x00\x00\x04test\x00\x12\x00\x00\x00\x020\x00\x06\x00\x00\x00hello\x00\x00\x00"},
 	{new(stStringArray), stStringArray{[1]string{"hello"}}, testMap([]interface{}{"hello"}),
-		[]byte("\x1d\x00\x00\x00\x04test\x00\x12\x00\x00\x00\x020\x00\x06\x00\x00\x00hello\x00\x00\x00")},
+		"\x1d\x00\x00\x00\x04test\x00\x12\x00\x00\x00\x020\x00\x06\x00\x00\x00hello\x00\x00\x00"},
 	{new(BSONData), BSONData{Kind: kindDocument, Data: []byte("\x15\x00\x00\x00\x02test\x00\x06\x00\x00\x00world\x00\x00")},
 		testMap("world"),
-		[]byte("\x15\x00\x00\x00\x02test\x00\x06\x00\x00\x00world\x00\x00")},
+		"\x15\x00\x00\x00\x02test\x00\x06\x00\x00\x00world\x00\x00"},
 	{new(stId), stId{Test: 2, Id: 1}, map[string]interface{}{"test": 2, "_id": 1},
-		[]byte("\x18\x00\x00\x00\x10_id\x00\x01\x00\x00\x00\x10test\x00\x02\x00\x00\x00\x00")},
+		"\x18\x00\x00\x00\x10_id\x00\x01\x00\x00\x00\x10test\x00\x02\x00\x00\x00\x00"},
 	{new(stEmbed), stEmbed{stInt32: stInt32{2}, Id: 1}, map[string]interface{}{"test": 2, "_id": 1},
-		[]byte("\x18\x00\x00\x00\x10_id\x00\x01\x00\x00\x00\x10test\x00\x02\x00\x00\x00\x00")},
+		"\x18\x00\x00\x00\x10_id\x00\x01\x00\x00\x00\x10test\x00\x02\x00\x00\x00\x00"},
 }
 
 func TestEncodeMap(t *testing.T) {
-	for i, bt := range bsonTests {
+	for _, bt := range bsonTests {
 		var data []byte
 		data, err := Encode(data, bt.mv)
 		if err != nil {
-			t.Errorf("%d: error encoding %s: %s", i, bt.mv, err)
-		} else if !bytes.Equal(bt.data, data) {
-			t.Errorf("%d: doc=%s,\n  expected %q\n  actual   %q", i, bt.mv, bt.data, data)
+			t.Errorf("Encode(data, %q) returned error %v", bt.mv, err)
+		} else if string(data) != bt.data {
+			t.Errorf("Encode(data, %q) data=%q, want %q", bt.mv, string(data), bt.data)
 		}
 	}
 }
 
 func TestEncodeStruct(t *testing.T) {
-	for i, bt := range bsonTests {
+	for _, bt := range bsonTests {
 		var data []byte
 		data, err := Encode(data, bt.sv)
 		if err != nil {
-			t.Errorf("%d: error encoding %s: %s", i, bt.sv, err)
-		} else if !bytes.Equal(bt.data, data) {
-			t.Errorf("%d: doc=%s,\n  expected %q\n  actual   %q", i, bt.mv, bt.data, data)
+			t.Errorf("Encoded(data, %q) returned error %v", bt.sv, err)
+		} else if string(data) != bt.data {
+			t.Errorf("Encoded(data, %q) data=%q, want %q", bt.sv, string(data), bt.data)
 		}
 	}
 }
 
 func TestDecodeMap(t *testing.T) {
-	for i, bt := range bsonTests {
+	for _, bt := range bsonTests {
 		if bt.psv == nil {
 			continue
 		}
 		m := map[string]interface{}{}
-		err := Decode(bt.data, &m)
+		err := Decode([]byte(bt.data), &m)
 		if err != nil {
-			t.Errorf("%d: error decoding %q: %s", i, bt.data, err)
+			t.Errorf("Decode(%q, m) returned error %v", bt.data, err)
 		} else if !reflect.DeepEqual(bt.mv, m) {
-			t.Errorf("%d: data=%s,\n  expected %q\n  actual   %q", i, bt.data, bt.mv, m)
+			t.Errorf("Decode(%q, m) m = %q, want %q", bt.data, m, bt.mv)
 		}
 	}
 }
 
 func TestDecodeStruct(t *testing.T) {
-	for i, bt := range bsonTests {
+	for _, bt := range bsonTests {
 		if bt.psv == nil {
 			continue
 		}
 		pt := reflect.NewValue(bt.psv).Type().(*reflect.PtrType)
 		psv := reflect.MakeZero(pt).(*reflect.PtrValue)
 		psv.PointTo(reflect.MakeZero(pt.Elem()))
-		err := Decode(bt.data, psv.Interface())
+		err := Decode([]byte(bt.data), psv.Interface())
 		sv := psv.Elem().Interface()
 		if err != nil {
-			t.Errorf("%d: error decoding %q: %s", i, bt.data, err)
+			t.Errorf("Decode(%q, sv) returned error %v", bt.data, err)
 		} else if !reflect.DeepEqual(sv, bt.sv) {
-			t.Errorf("%d: data=%q,\n\texpected %q\n\tactual  %q", i, bt.data, bt.sv, sv)
+			t.Errorf("Decode(%q, sv) sv = %q, want %q", bt.data, sv, bt.sv)
 		}
 	}
 }
