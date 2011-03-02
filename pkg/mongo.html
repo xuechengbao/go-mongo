@@ -109,13 +109,13 @@ var (
 var ErrEOD = os.NewError(&#34;bson: unexpected end of data when parsing BSON&#34;)
 </pre>
 
-<h2 id="Count">func <a href="https://github.com/garyburd/go-mongo/blob/27e0c5a5b66b307586dec09b44c7472daa7d285f/helpers.go#L216">Count</a></h2>
+<h2 id="Count">func <a href="https://github.com/garyburd/go-mongo/blob/c9a435c2d31404f5c864135f3a972094bbfcb6bc/helpers.go#L216">Count</a></h2>
 <p><code>func Count(conn Conn, namespace string, query interface{}, options *FindOptions) (int64, os.Error)</code></p>
 <p>
 Count returns the number of documents for query.
 </p>
 
-<h2 id="Decode">func <a href="https://github.com/garyburd/go-mongo/blob/27e0c5a5b66b307586dec09b44c7472daa7d285f/bson_decode.go#L75">Decode</a></h2>
+<h2 id="Decode">func <a href="https://github.com/garyburd/go-mongo/blob/c9a435c2d31404f5c864135f3a972094bbfcb6bc/bson_decode.go#L75">Decode</a></h2>
 <p><code>func Decode(data []byte, v interface{}) (err os.Error)</code></p>
 <p>
 Deocde decodes BSON data to value v.
@@ -150,7 +150,7 @@ To decode a BSON value into a nil interface value, the first type listed in
 the right hand column of the table above is used.
 </p>
 
-<h2 id="Encode">func <a href="https://github.com/garyburd/go-mongo/blob/27e0c5a5b66b307586dec09b44c7472daa7d285f/bson_encode.go#L94">Encode</a></h2>
+<h2 id="Encode">func <a href="https://github.com/garyburd/go-mongo/blob/c9a435c2d31404f5c864135f3a972094bbfcb6bc/bson_encode.go#L94">Encode</a></h2>
 <p><code>func Encode(buf []byte, doc interface{}) (result []byte, err os.Error)</code></p>
 <p>
 Encode appends the BSON encoding of doc to buf and returns the new slice.
@@ -205,18 +205,18 @@ mongo.Timestamp     -&gt; Timestamp
 Other types including channels, complex and function values cannot be encoded.
 </p>
 <p>
-BSON cannot represent cyclic data structurs and Encode does not handle them.
+BSON cannot represent cyclic data structure and Encode does not handle them.
 Passing cyclic structures to Encode will result in an infinite recursion.
 </p>
 
-<h2 id="FindAndRemove">func <a href="https://github.com/garyburd/go-mongo/blob/27e0c5a5b66b307586dec09b44c7472daa7d285f/helpers.go#L278">FindAndRemove</a></h2>
+<h2 id="FindAndRemove">func <a href="https://github.com/garyburd/go-mongo/blob/c9a435c2d31404f5c864135f3a972094bbfcb6bc/helpers.go#L278">FindAndRemove</a></h2>
 <p><code>func FindAndRemove(conn Conn, namespace string, selector interface{}, options *FindAndModifyOptions, result interface{}) os.Error</code></p>
 <p>
 FindAndRemove removes and returns a document specified by selector.
 FindAndRemove is a wrapper around the MongoDB findAndModify command.
 </p>
 
-<h2 id="FindAndUpdate">func <a href="https://github.com/garyburd/go-mongo/blob/27e0c5a5b66b307586dec09b44c7472daa7d285f/helpers.go#L263">FindAndUpdate</a></h2>
+<h2 id="FindAndUpdate">func <a href="https://github.com/garyburd/go-mongo/blob/c9a435c2d31404f5c864135f3a972094bbfcb6bc/helpers.go#L263">FindAndUpdate</a></h2>
 <p><code>func FindAndUpdate(conn Conn, namespace string, selector, update interface{}, options *FindAndModifyOptions, result interface{}) os.Error</code></p>
 <p>
 FindAndUpdate updates and returns a document specified by selector with
@@ -224,13 +224,13 @@ operator update. FindAndUpdate is a wrapper around the MongoDB findAndModify
 command.
 </p>
 
-<h2 id="FindOne">func <a href="https://github.com/garyburd/go-mongo/blob/27e0c5a5b66b307586dec09b44c7472daa7d285f/helpers.go#L94">FindOne</a></h2>
+<h2 id="FindOne">func <a href="https://github.com/garyburd/go-mongo/blob/c9a435c2d31404f5c864135f3a972094bbfcb6bc/helpers.go#L94">FindOne</a></h2>
 <p><code>func FindOne(conn Conn, namespace string, query interface{}, options *FindOptions, result interface{}) os.Error</code></p>
 <p>
 FindOne returns a single result for a query.
 </p>
 
-<h2 id="LastError">func <a href="https://github.com/garyburd/go-mongo/blob/27e0c5a5b66b307586dec09b44c7472daa7d285f/helpers.go#L143">LastError</a></h2>
+<h2 id="LastError">func <a href="https://github.com/garyburd/go-mongo/blob/c9a435c2d31404f5c864135f3a972094bbfcb6bc/helpers.go#L143">LastError</a></h2>
 <p><code>func LastError(conn Conn, namespace string, cmd Doc) os.Error</code></p>
 <p>
 LastError returns the last error for a database. The database is specified
@@ -239,7 +239,7 @@ last error. If cmd is nil, then the command {&#34;getLasetError&#34;: 1} is used
 get the error.
 </p>
 
-<h2 id="RunCommand">func <a href="https://github.com/garyburd/go-mongo/blob/27e0c5a5b66b307586dec09b44c7472daa7d285f/helpers.go#L118">RunCommand</a></h2>
+<h2 id="RunCommand">func <a href="https://github.com/garyburd/go-mongo/blob/c9a435c2d31404f5c864135f3a972094bbfcb6bc/helpers.go#L118">RunCommand</a></h2>
 <p><code>func RunCommand(conn Conn, namespace string, cmd Doc, result interface{}) os.Error</code></p>
 <p>
 RunCommand executes the command cmd on the database specified by the
@@ -247,25 +247,25 @@ database component of namespace. The function returns an error if the &#34;ok&#3
 field in the command response is false.
 </p>
 
-<h2 id="SafeInsert">func <a href="https://github.com/garyburd/go-mongo/blob/27e0c5a5b66b307586dec09b44c7472daa7d285f/helpers.go#L168">SafeInsert</a></h2>
+<h2 id="SafeInsert">func <a href="https://github.com/garyburd/go-mongo/blob/c9a435c2d31404f5c864135f3a972094bbfcb6bc/helpers.go#L168">SafeInsert</a></h2>
 <p><code>func SafeInsert(conn Conn, namespace string, errorCmd Doc, documents ...interface{}) os.Error</code></p>
 <p>
 SafeInsert returns the last error from the database after calling conn.Insert().
 </p>
 
-<h2 id="SafeRemove">func <a href="https://github.com/garyburd/go-mongo/blob/27e0c5a5b66b307586dec09b44c7472daa7d285f/helpers.go#L184">SafeRemove</a></h2>
+<h2 id="SafeRemove">func <a href="https://github.com/garyburd/go-mongo/blob/c9a435c2d31404f5c864135f3a972094bbfcb6bc/helpers.go#L184">SafeRemove</a></h2>
 <p><code>func SafeRemove(conn Conn, namespace string, errorCmd Doc, selector interface{}, options *RemoveOptions) os.Error</code></p>
 <p>
 SafeRemove returns the last error from the database after calling conn.Remove().
 </p>
 
-<h2 id="SafeUpdate">func <a href="https://github.com/garyburd/go-mongo/blob/27e0c5a5b66b307586dec09b44c7472daa7d285f/helpers.go#L176">SafeUpdate</a></h2>
+<h2 id="SafeUpdate">func <a href="https://github.com/garyburd/go-mongo/blob/c9a435c2d31404f5c864135f3a972094bbfcb6bc/helpers.go#L176">SafeUpdate</a></h2>
 <p><code>func SafeUpdate(conn Conn, namespace string, errorCmd Doc, selector, update interface{}, options *UpdateOptions) os.Error</code></p>
 <p>
 SafeUpdate returns the last error from the database after calling conn.Update().
 </p>
 
-<h2 id="SplitNamespace">func <a href="https://github.com/garyburd/go-mongo/blob/27e0c5a5b66b307586dec09b44c7472daa7d285f/helpers.go#L54">SplitNamespace</a></h2>
+<h2 id="SplitNamespace">func <a href="https://github.com/garyburd/go-mongo/blob/c9a435c2d31404f5c864135f3a972094bbfcb6bc/helpers.go#L54">SplitNamespace</a></h2>
 <p><code>func SplitNamespace(s string) (string, string)</code></p>
 <p>
 SplitNamespace splits a namespace into database name and collection name
@@ -327,7 +327,7 @@ server.
 
 
 
-    <h3 id="CommandResponse.Error">func (CommandResponse) <a href="https://github.com/garyburd/go-mongo/blob/27e0c5a5b66b307586dec09b44c7472daa7d285f/helpers.go#L80">Error</a></h3>
+    <h3 id="CommandResponse.Error">func (CommandResponse) <a href="https://github.com/garyburd/go-mongo/blob/c9a435c2d31404f5c864135f3a972094bbfcb6bc/helpers.go#L80">Error</a></h3>
     <p><code>func (s CommandResponse) Error() os.Error</code></p>
     <p>
 Error returns the error from the response or nil.
@@ -363,7 +363,7 @@ the collection.
  // Insert documents.
  Insert(namespace string, documents ...interface{}) os.Error
 
- // Remove documents specified by seletor.
+ // Remove documents specified by selector.
  Remove(namespace string, selector interface{}, options *RemoveOptions) os.Error
 
  // Find documents specified by selector. The returned cursor must be closed.
@@ -372,13 +372,13 @@ the collection.
 
 
 
-    <h3 id="Dial">func <a href="https://github.com/garyburd/go-mongo/blob/27e0c5a5b66b307586dec09b44c7472daa7d285f/connection.go#L45">Dial</a></h3>
+    <h3 id="Dial">func <a href="https://github.com/garyburd/go-mongo/blob/c9a435c2d31404f5c864135f3a972094bbfcb6bc/connection.go#L45">Dial</a></h3>
     <p><code>func Dial(addr string) (Conn, os.Error)</code></p>
     <p>
 Dial connects to server at addr.
 </p>
 
-    <h3 id="NewLoggingConn">func <a href="https://github.com/garyburd/go-mongo/blob/27e0c5a5b66b307586dec09b44c7472daa7d285f/log.go#L36">NewLoggingConn</a></h3>
+    <h3 id="NewLoggingConn">func <a href="https://github.com/garyburd/go-mongo/blob/c9a435c2d31404f5c864135f3a972094bbfcb6bc/log.go#L36">NewLoggingConn</a></h3>
     <p><code>func NewLoggingConn(conn Conn) Conn</code></p>
     <p>
 NewLoggingConn returns logging wrapper around a connection.
@@ -439,7 +439,7 @@ tailable cursors.
 
 <h2 id="DateTime">type DateTime</h2>
 <p>
-DateTime represents a BSON timestamp. The value is in milliseconds since the
+DateTime represents a BSON datetime. The value is in milliseconds since the
 Unix epoch.
 </p>
 
@@ -462,13 +462,13 @@ target type.
 
 
 
-    <h3 id="DecodeConvertError.String">func (*DecodeConvertError) <a href="https://github.com/garyburd/go-mongo/blob/27e0c5a5b66b307586dec09b44c7472daa7d285f/bson_decode.go#L34">String</a></h3>
+    <h3 id="DecodeConvertError.String">func (*DecodeConvertError) <a href="https://github.com/garyburd/go-mongo/blob/c9a435c2d31404f5c864135f3a972094bbfcb6bc/bson_decode.go#L34">String</a></h3>
     <p><code>func (e *DecodeConvertError) String() string</code></p>
     
 
 <h2 id="DecodeTypeError">type DecodeTypeError</h2>
 <p>
-DecodeTypeError is returned when the deocoder encounters an unknown type in
+DecodeTypeError is returned when the decoder encounters an unknown type in
 the input.
 </p>
 
@@ -479,7 +479,7 @@ the input.
 
 
 
-    <h3 id="DecodeTypeError.String">func (*DecodeTypeError) <a href="https://github.com/garyburd/go-mongo/blob/27e0c5a5b66b307586dec09b44c7472daa7d285f/bson_decode.go#L44">String</a></h3>
+    <h3 id="DecodeTypeError.String">func (*DecodeTypeError) <a href="https://github.com/garyburd/go-mongo/blob/c9a435c2d31404f5c864135f3a972094bbfcb6bc/bson_decode.go#L44">String</a></h3>
     <p><code>func (e *DecodeTypeError) String() string</code></p>
     
 
@@ -494,7 +494,7 @@ pairs is important.
 
 
 
-    <h3 id="Doc.Append">func (*Doc) <a href="https://github.com/garyburd/go-mongo/blob/27e0c5a5b66b307586dec09b44c7472daa7d285f/bson.go#L124">Append</a></h3>
+    <h3 id="Doc.Append">func (*Doc) <a href="https://github.com/garyburd/go-mongo/blob/c9a435c2d31404f5c864135f3a972094bbfcb6bc/bson.go#L124">Append</a></h3>
     <p><code>func (d *Doc) Append(name string, value interface{})</code></p>
     <p>
 Append adds an item to doc.
@@ -524,7 +524,7 @@ EncodeTypeError is the error indicating that Encode could not encode an input ty
 
 
 
-    <h3 id="EncodeTypeError.String">func (*EncodeTypeError) <a href="https://github.com/garyburd/go-mongo/blob/27e0c5a5b66b307586dec09b44c7472daa7d285f/bson_encode.go#L36">String</a></h3>
+    <h3 id="EncodeTypeError.String">func (*EncodeTypeError) <a href="https://github.com/garyburd/go-mongo/blob/c9a435c2d31404f5c864135f3a972094bbfcb6bc/bson_encode.go#L36">String</a></h3>
     <p><code>func (e *EncodeTypeError) String() string</code></p>
     
 
@@ -560,7 +560,7 @@ FindOptions specifies options for the Conn.Find method.
 <pre>type FindOptions struct {
  // Optional document that limits the fields in the returned documents.
  // Fields contains one or more elements, each of which is the name of a
- // field that should be returned, and and the integer value 1. 
+ // field that should be returned, and the integer value 1. 
  Fields interface{}
 
  // Tailable means cursor is not closed when the last data is retrieved.
@@ -640,7 +640,7 @@ MongoError represents an error for the connection mutation operations.
 
 
 
-    <h3 id="MongoError.String">func (*MongoError) <a href="https://github.com/garyburd/go-mongo/blob/27e0c5a5b66b307586dec09b44c7472daa7d285f/helpers.go#L68">String</a></h3>
+    <h3 id="MongoError.String">func (*MongoError) <a href="https://github.com/garyburd/go-mongo/blob/c9a435c2d31404f5c864135f3a972094bbfcb6bc/helpers.go#L68">String</a></h3>
     <p><code>func (e *MongoError) String() string</code></p>
     
 
@@ -654,16 +654,16 @@ are zero, then the object id is not encoded to BSON.
 
 
 
-    <h3 id="NewObjectId">func <a href="https://github.com/garyburd/go-mongo/blob/27e0c5a5b66b307586dec09b44c7472daa7d285f/bson.go#L66">NewObjectId</a></h3>
+    <h3 id="NewObjectId">func <a href="https://github.com/garyburd/go-mongo/blob/c9a435c2d31404f5c864135f3a972094bbfcb6bc/bson.go#L66">NewObjectId</a></h3>
     <p><code>func NewObjectId() ObjectId</code></p>
     <p>
-NewObjectId returns a new object id. This funtion uses the following format
+NewObjectId returns a new object id. This function uses the following format
 for object ids:
 </p>
 <pre>[0:4]  Time since epoch in seconds. This is compatible
        with other drivers.
 
-[4:12] Incrementing counter intialized with crypto random
+[4:12] Incrementing counter initialized with crypto random
        number. This ensures that object ids are unique, but
        is simpler than the format used by other drivers.
 </pre>
@@ -708,14 +708,14 @@ the resources used by the connection.
 
 
 
-    <h3 id="NewDialPool">func <a href="https://github.com/garyburd/go-mongo/blob/27e0c5a5b66b307586dec09b44c7472daa7d285f/pool.go#L57">NewDialPool</a></h3>
+    <h3 id="NewDialPool">func <a href="https://github.com/garyburd/go-mongo/blob/c9a435c2d31404f5c864135f3a972094bbfcb6bc/pool.go#L57">NewDialPool</a></h3>
     <p><code>func NewDialPool(addr string, maxIdle int) *Pool</code></p>
     <p>
-NewDialPool returns a new connetion pool. The pool uses mongo.Dial to
-create new connections and maintains a maximum of maxIdle connetions.
+NewDialPool returns a new connection pool. The pool uses mongo.Dial to
+create new connections and maintains a maximum of maxIdle connections.
 </p>
 
-    <h3 id="NewPool">func <a href="https://github.com/garyburd/go-mongo/blob/27e0c5a5b66b307586dec09b44c7472daa7d285f/pool.go#L63">NewPool</a></h3>
+    <h3 id="NewPool">func <a href="https://github.com/garyburd/go-mongo/blob/c9a435c2d31404f5c864135f3a972094bbfcb6bc/pool.go#L63">NewPool</a></h3>
     <p><code>func NewPool(newFn func() (Conn, os.Error), maxIdle int) *Pool</code></p>
     <p>
 NewPool returns a new connection pool. The pool uses newFn to create
@@ -723,7 +723,7 @@ connections as needed and maintains a maximum of maxIdle idle connections.
 </p>
 
 
-    <h3 id="Pool.Get">func (*Pool) <a href="https://github.com/garyburd/go-mongo/blob/27e0c5a5b66b307586dec09b44c7472daa7d285f/pool.go#L70">Get</a></h3>
+    <h3 id="Pool.Get">func (*Pool) <a href="https://github.com/garyburd/go-mongo/blob/c9a435c2d31404f5c864135f3a972094bbfcb6bc/pool.go#L70">Get</a></h3>
     <p><code>func (p *Pool) Get() (Conn, os.Error)</code></p>
     <p>
 Get returns an idle connection from the pool if available or creates a new
@@ -826,13 +826,13 @@ update, remove) and returns the error if any as an os.Error.
 
 
 
-    <h3 id="SafeConn.Insert">func (SafeConn) <a href="https://github.com/garyburd/go-mongo/blob/27e0c5a5b66b307586dec09b44c7472daa7d285f/helpers.go#L207">Insert</a></h3>
+    <h3 id="SafeConn.Insert">func (SafeConn) <a href="https://github.com/garyburd/go-mongo/blob/c9a435c2d31404f5c864135f3a972094bbfcb6bc/helpers.go#L207">Insert</a></h3>
     <p><code>func (c SafeConn) Insert(namespace string, documents ...interface{}) os.Error</code></p>
     
-    <h3 id="SafeConn.Remove">func (SafeConn) <a href="https://github.com/garyburd/go-mongo/blob/27e0c5a5b66b307586dec09b44c7472daa7d285f/helpers.go#L211">Remove</a></h3>
+    <h3 id="SafeConn.Remove">func (SafeConn) <a href="https://github.com/garyburd/go-mongo/blob/c9a435c2d31404f5c864135f3a972094bbfcb6bc/helpers.go#L211">Remove</a></h3>
     <p><code>func (c SafeConn) Remove(namespace string, selector interface{}, options *RemoveOptions) os.Error</code></p>
     
-    <h3 id="SafeConn.Update">func (SafeConn) <a href="https://github.com/garyburd/go-mongo/blob/27e0c5a5b66b307586dec09b44c7472daa7d285f/helpers.go#L203">Update</a></h3>
+    <h3 id="SafeConn.Update">func (SafeConn) <a href="https://github.com/garyburd/go-mongo/blob/c9a435c2d31404f5c864135f3a972094bbfcb6bc/helpers.go#L203">Update</a></h3>
     <p><code>func (c SafeConn) Update(namespace string, selector, update interface{}, options *UpdateOptions) os.Error</code></p>
     
 
