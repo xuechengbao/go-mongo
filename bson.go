@@ -21,6 +21,8 @@ import (
 	"strconv"
 	"sync"
 	"time"
+	"strings"
+	"os"
 )
 
 // DateTime represents a BSON datetime. The value is in milliseconds since the
@@ -185,7 +187,18 @@ func kindName(kind int) string {
 	return name
 }
 
-func compileFieldIndex(t *reflect.StructType, depth map[string]int, index []int, fieldIndex map[string][]int) {
+type fieldInfo struct {
+	name        string
+	index       []int
+	conditional bool
+}
+
+type structInfo struct {
+	m map[string]*fieldInfo
+	l []*fieldInfo
+}
+
+func compileStructInfo(t *reflect.StructType, depth map[string]int, index []int, si *structInfo) {
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 		switch {
@@ -195,56 +208,76 @@ func compileFieldIndex(t *reflect.StructType, depth map[string]int, index []int,
 			// TODO: Handle pointers. Requires change to decoder and 
 			// protection against infinite recursion.
 			if t, ok := f.Type.(*reflect.StructType); ok {
-				compileFieldIndex(t, depth, append(index, i), fieldIndex)
+				compileStructInfo(t, depth, append(index, i), si)
 			}
 		default:
-			name := f.Name
-			if f.Tag != "" {
-				name = f.Tag
+			fi := &fieldInfo{name: f.Name}
+			p := strings.Split(f.Tag, "/", -1)
+			if len(p) > 0 {
+				if len(p[0]) > 0 {
+					fi.name = p[0]
+				}
+				for _, s := range p[1:] {
+					switch s {
+					case "c":
+						fi.conditional = true
+					default:
+						panic(os.NewError("bson: unknown field flag " + s + " for type " + t.Name()))
+					}
+				}
 			}
-			d, found := depth[name]
+			d, found := depth[fi.name]
 			if !found {
 				d = 1 << 30
 			}
 			switch {
 			case len(index) == d:
 				// At same depth, remove from result.
-				fieldIndex[name] = nil, false
+				si.m[fi.name] = nil, false
+				j := 0
+				for i := 0; i < len(si.l); i++ {
+					if fi.name != si.l[i].name {
+						si.l[j] = si.l[i]
+						j += 1
+					}
+				}
+				si.l = si.l[:j]
 			case len(index) < d:
-				findex := make([]int, len(index)+1)
-				copy(findex, index)
-				findex[len(index)] = i
-				depth[name] = len(index)
-				fieldIndex[name] = findex
+				fi.index = make([]int, len(index)+1)
+				copy(fi.index, index)
+				fi.index[len(index)] = i
+				depth[fi.name] = len(index)
+				si.m[fi.name] = fi
+				si.l = append(si.l, fi)
 			}
 		}
 	}
 }
 
 var (
-	fieldIndexMutex sync.RWMutex
-	fieldIndexCache = make(map[*reflect.StructType]map[string][]int)
+	structInfoMutex  sync.RWMutex
+	structInfoCache  = make(map[*reflect.StructType]*structInfo)
+	defaultFieldInfo = &fieldInfo{}
 )
 
-// fieldIndex returns the name to index map for the fields in t.
-func fieldIndex(t *reflect.StructType) map[string][]int {
+func structInfoForType(t *reflect.StructType) *structInfo {
 
-	fieldIndexMutex.RLock()
-	fieldIndex := fieldIndexCache[t]
-	fieldIndexMutex.RUnlock()
-	if fieldIndex != nil {
-		return fieldIndex
+	structInfoMutex.RLock()
+	si, found := structInfoCache[t]
+	structInfoMutex.RUnlock()
+	if found {
+		return si
 	}
 
-	fieldIndexMutex.Lock()
-	defer fieldIndexMutex.Unlock()
-	fieldIndex = fieldIndexCache[t]
-	if fieldIndex != nil {
-		return fieldIndex
+	structInfoMutex.Lock()
+	defer structInfoMutex.Unlock()
+	si, found = structInfoCache[t]
+	if found {
+		return si
 	}
 
-	fieldIndex = make(map[string][]int)
-	compileFieldIndex(t, make(map[string]int), nil, fieldIndex)
-	fieldIndexCache[t] = fieldIndex
-	return fieldIndex
+	si = &structInfo{m: make(map[string]*fieldInfo)}
+	compileStructInfo(t, make(map[string]int), nil, si)
+	structInfoCache[t] = si
+	return si
 }

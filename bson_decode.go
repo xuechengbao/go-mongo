@@ -478,7 +478,7 @@ func decodeArray(d *decodeState, kind int, value reflect.Value) {
 func decodeStruct(d *decodeState, kind int, value reflect.Value) {
 	v := value.(*reflect.StructValue)
 	t := v.Type().(*reflect.StructType)
-	fieldIndex := fieldIndex(t)
+	si := structInfoForType(t)
 	offset := d.beginDoc()
 	for {
 		kind, name := d.scanKindName()
@@ -488,8 +488,8 @@ func decodeStruct(d *decodeState, kind int, value reflect.Value) {
 		if kind == kindNull {
 			continue
 		}
-		if index, ok := fieldIndex[string(name)]; ok {
-			d.decodeValue(kind, v.FieldByIndex(index))
+		if fi, ok := si.m[string(name)]; ok {
+			d.decodeValue(kind, v.FieldByIndex(fi.index))
 		} else {
 			d.skipValue(kind)
 		}

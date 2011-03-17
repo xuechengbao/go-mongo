@@ -27,81 +27,85 @@ func testMap(value interface{}) map[string]interface{} {
 type stEmpty struct{}
 
 type stFloat64 struct {
-	Test float64 "test"
+	Test float64 "test/c"
 }
 
 type stString struct {
-	Test string "test"
+	Test string "test/c"
 }
 
 type stDoc struct {
-	Test map[string]interface{} "test"
+	Test map[string]interface{} "test/c"
 }
 
 type stBinary struct {
-	Test []byte "test"
+	Test []byte "test/c"
 }
 
 type stObjectId struct {
-	Test ObjectId "test"
+	Test ObjectId "test/c"
 }
 
 type stBool struct {
+	Test bool "test/c"
+}
+
+type ncBool struct {
 	Test bool "test"
 }
 
 type stRegexp struct {
-	Test Regexp "test"
+	Test Regexp "test/c"
 }
 
 type stSymbol struct {
-	Test Symbol "test"
+	Test Symbol "test/c"
 }
 
 type stInt32 struct {
-	Test int32 "test"
+	Test int32 "test/c"
 }
 
 type stInt64 struct {
-	Test int64 "test"
+	Test int64 "test/c"
 }
 
 type stDateTime struct {
-	Test DateTime "test"
+	Test DateTime "test/c"
 }
 
 type stTimestamp struct {
-	Test Timestamp "test"
+	Test Timestamp "test/c"
 }
 
 type stMinMax struct {
-	Test MinMax "test"
+	Test MinMax "test/c"
 }
 
 type stCodeWithScope struct {
-	Test CodeWithScope "test"
+	Test CodeWithScope "test/c"
 }
 
 type stAny struct {
-	Test interface{} "test"
+	Test interface{} "test/c"
 }
 
 type stStringSlice struct {
-	Test []string "test"
+	Test []string "test/c"
 }
 
 type stStringArray struct {
-	Test [1]string "test"
+	Test [1]string "test/c"
 }
 
 type stId struct {
-	Test int "test"
-	Id   int "_id"
+	Id   int "_id/c"
+	Test int "test/c"
 }
 
 type stEmbed struct {
+	Id int "_id/c"
 	stInt32
-	Id int "_id"
 }
 
 var bsonTests = []struct {
@@ -110,6 +114,22 @@ var bsonTests = []struct {
 	mv   map[string]interface{}
 	data string
 }{
+	{nil, stFloat64{}, nil, "\x05\x00\x00\x00\x00"},
+	{nil, stString{}, nil, "\x05\x00\x00\x00\x00"},
+	{nil, stAny{}, nil, "\x05\x00\x00\x00\x00"},
+	{nil, stDoc{}, nil, "\x05\x00\x00\x00\x00"},
+	{nil, stBinary{}, nil, "\x05\x00\x00\x00\x00"},
+	{nil, stObjectId{}, nil, "\x05\x00\x00\x00\x00"},
+	{nil, stBool{}, nil, "\x05\x00\x00\x00\x00"},
+	{nil, stSymbol{}, nil, "\x05\x00\x00\x00\x00"},
+	{nil, stInt32{}, nil, "\x05\x00\x00\x00\x00"},
+	{nil, stInt64{}, nil, "\x05\x00\x00\x00\x00"},
+	{nil, stMinMax{}, nil, "\x05\x00\x00\x00\x00"},
+	{nil, stCodeWithScope{}, nil, "\x05\x00\x00\x00\x00"},
+	{nil, stRegexp{}, nil, "\x05\x00\x00\x00\x00"},
+	{nil, stTimestamp{}, nil, "\x05\x00\x00\x00\x00"},
+	{nil, stDateTime{}, nil, "\x05\x00\x00\x00\x00"},
+
 	{new(stEmpty), stEmpty{}, map[string]interface{}{},
 		"\x05\x00\x00\x00\x00"},
 	{new(stFloat64), stFloat64{1.5}, testMap(float64(1.5)),
@@ -128,9 +148,9 @@ var bsonTests = []struct {
 	{new(stObjectId), stObjectId{ObjectId{}},
 		map[string]interface{}{},
 		"\x05\x00\x00\x00\x00"},
-	{new(stBool), stBool{true}, testMap(true),
+	{new(ncBool), ncBool{true}, testMap(true),
 		"\x0C\x00\x00\x00\x08test\x00\x01\x00"},
-	{new(stBool), stBool{false}, testMap(false),
+	{new(ncBool), ncBool{false}, testMap(false),
 		"\x0C\x00\x00\x00\x08test\x00\x00\x00"},
 	{new(stSymbol), stSymbol{Symbol("aSymbol")}, testMap(Symbol("aSymbol")),
 		"\x17\x00\x00\x00\x0Etest\x00\x08\x00\x00\x00aSymbol\x00\x00"},
@@ -167,6 +187,9 @@ var bsonTests = []struct {
 
 func TestEncodeMap(t *testing.T) {
 	for _, bt := range bsonTests {
+		if bt.mv == nil {
+			continue
+		}
 		var data []byte
 		data, err := Encode(data, bt.mv)
 		if err != nil {
