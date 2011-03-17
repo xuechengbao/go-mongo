@@ -52,9 +52,8 @@ type Regexp struct {
 	Options string
 }
 
-// ObjectId represents a BSON object identifier. If all bytes in the object id
-// are zero, then the object id is not encoded to BSON.
-type ObjectId [12]byte
+// ObjectId represents a BSON object identifier. 
+type ObjectId string
 
 // NewObjectId returns a new object id. This function uses the following format
 // for object ids:
@@ -68,7 +67,7 @@ type ObjectId [12]byte
 func NewObjectId() ObjectId {
 	t := time.Seconds()
 	c := nextOidCounter()
-	return ObjectId{
+    b := [12]byte{
 		byte(t >> 24),
 		byte(t >> 16),
 		byte(t >> 8),
@@ -81,6 +80,7 @@ func NewObjectId() ObjectId {
 		byte(c >> 16),
 		byte(c >> 8),
 		byte(c)}
+    return ObjectId(b[:])
 }
 
 var (

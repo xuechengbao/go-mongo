@@ -278,20 +278,14 @@ func encodeRegexp(e *encodeState, name string, fi *fieldInfo, value reflect.Valu
 
 func encodeObjectId(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
 	oid := value.Interface().(ObjectId)
-	if fi.conditional {
-		zero := true
-		for i := 0; i < len(oid); i++ {
-			if oid[i] != 0 {
-				zero = false
-				break
-			}
-		}
-		if zero {
-			return
-		}
-	}
+    if oid == "" {
+        return
+    }
+    if len(oid) != 12 {
+        e.abort(os.NewError("bson: object id length != 12"))
+    }
 	e.writeKindName(kindObjectId, name)
-	e.Write(oid[:])
+    e.WriteString(string(oid))
 }
 
 func encodeBSONData(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
@@ -443,7 +437,7 @@ func init() {
 			encodeInt64(e, kindDateTime, name, fi, value)
 		},
 		reflect.Typeof(MinMax(0)):  encodeMinMax,
-		reflect.Typeof(ObjectId{}): encodeObjectId,
+		reflect.Typeof(ObjectId("")): encodeObjectId,
 		reflect.Typeof(Regexp{}):   encodeRegexp,
 		reflect.Typeof(Symbol("")): func(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
 			encodeString(e, kindSymbol, name, fi, value)

@@ -315,7 +315,7 @@ func decodeObjectId(d *decodeState, kind int, value reflect.Value) {
 	case kindObjectId:
 		p = d.scanSlice(12)
 	}
-	reflect.Copy(value.(reflect.ArrayOrSliceValue), reflect.NewValue(p).(reflect.ArrayOrSliceValue))
+	value.(*reflect.StringValue).Set(string(p))
 }
 
 func decodeBSONData(d *decodeState, kind int, value reflect.Value) {
@@ -537,10 +537,7 @@ func (d *decodeState) decodeValueInterface(kind int) interface{} {
 		copy(newp, p)
 		return newp
 	case kindObjectId:
-		p := d.scanSlice(12)
-		oid := ObjectId{}
-		copy(oid[:], p)
-		return oid
+        return ObjectId(string(d.scanSlice(12)))
 	case kindBool:
 		return d.scanBool()
 	case kindDateTime:
@@ -615,7 +612,7 @@ func init() {
 		reflect.Typeof(BSONData{}):                   decodeBSONData,
 		reflect.Typeof(DateTime(0)):                  decodeDateTime,
 		reflect.Typeof(MinMax(0)):                    decodeMinMax,
-		reflect.Typeof(ObjectId{}):                   decodeObjectId,
+		reflect.Typeof(ObjectId("")):                 decodeObjectId,
 		reflect.Typeof(Symbol("")):                   decodeString,
 		reflect.Typeof(Timestamp(0)):                 decodeTimestamp,
 		reflect.Typeof([]byte{}):                     decodeByteSlice,
