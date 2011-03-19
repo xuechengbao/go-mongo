@@ -39,6 +39,7 @@ type connection struct {
 	requestId uint32
 	cursors   map[uint32]*cursor
 	err       os.Error
+	buf       [1024]byte
 }
 
 // Dial connects to server at addr.
@@ -119,7 +120,7 @@ func (c *connection) Update(namespace string, document, selector interface{}, op
 		}
 	}
 
-	b := buffer(make([]byte, 0, 512))
+	b := buffer(c.buf[:0])
 	b.Next(4)                    // placeholder for message length
 	b.WriteUint32(c.nextId())    // requestId
 	b.WriteUint32(0)             // responseTo
@@ -143,7 +144,7 @@ func (c *connection) Insert(namespace string, documents ...interface{}) (err os.
 	if len(documents) == 0 {
 		return os.NewError("mongo: insert with no documents")
 	}
-	b := buffer(make([]byte, 0, 512))
+	b := buffer(c.buf[:0])
 	b.Next(4)                 // placeholder for message length
 	b.WriteUint32(c.nextId()) // requestId
 	b.WriteUint32(0)          // responseTo
@@ -168,7 +169,7 @@ func (c *connection) Remove(namespace string, selector interface{}, options *Rem
 			flags |= removeSingle
 		}
 	}
-	b := buffer(make([]byte, 0, 512))
+	b := buffer(c.buf[:0])
 	b.Next(4)                    // placeholder for message length
 	b.WriteUint32(c.nextId())    // requestId
 	b.WriteUint32(0)             // responseTo
@@ -222,7 +223,7 @@ func (c *connection) Find(namespace string, query interface{}, options *FindOpti
 		}
 	}
 
-	b := buffer(make([]byte, 0, 512))
+	b := buffer(c.buf[:0])
 	b.Next(4)                         // placeholder for message length
 	b.WriteUint32(r.requestId)        // requestId
 	b.WriteUint32(0)                  // responseTo
@@ -253,7 +254,7 @@ func (c *connection) Find(namespace string, query interface{}, options *FindOpti
 
 func (c *connection) getMore(r *cursor) os.Error {
 	r.requestId = c.nextId()
-	b := buffer(make([]byte, 0, 5*4+len(r.namespace)+1+4+8))
+	b := buffer(c.buf[:0])
 	b.Next(4)                  // placeholder for message length
 	b.WriteUint32(r.requestId) // requestId
 	b.WriteUint32(0)           // responseTo
@@ -271,7 +272,7 @@ func (c *connection) getMore(r *cursor) os.Error {
 }
 
 func (c *connection) killCursors(cursorIds ...uint64) os.Error {
-	b := buffer(make([]byte, 0, 6*4+len(cursorIds)*8))
+	b := buffer(c.buf[:0])
 	b.Next(4)                             // placeholder for message length
 	b.WriteUint32(c.nextId())             // requestId
 	b.WriteUint32(0)                      // responseTo
@@ -309,19 +310,18 @@ func (c *connection) receive() os.Error {
 		return c.err
 	}
 
-	var buf [36]byte
-	if _, err := io.ReadFull(c.conn, buf[:]); err != nil {
+	if _, err := io.ReadFull(c.conn, c.buf[:36]); err != nil {
 		return c.fatal(err)
 	}
 
-	messageLength := int32(wire.Uint32(buf[0:4]))
-	requestId := wire.Uint32(buf[4:8])
-	responseTo := wire.Uint32(buf[8:12])
-	opCode := int32(wire.Uint32(buf[12:16]))
-	flags := wire.Uint32(buf[16:20])
-	cursorId := wire.Uint64(buf[20:28])
-	//startingFrom := int32(wire.Uint32(buf[28:32]))
-	count := int(wire.Uint32(buf[32:36]))
+	messageLength := int32(wire.Uint32(c.buf[0:4]))
+	requestId := wire.Uint32(c.buf[4:8])
+	responseTo := wire.Uint32(c.buf[8:12])
+	opCode := int32(wire.Uint32(c.buf[12:16]))
+	flags := wire.Uint32(c.buf[16:20])
+	cursorId := wire.Uint64(c.buf[20:28])
+	//startingFrom := int32(wire.Uint32(c.buf[28:32]))
+	count := int(wire.Uint32(c.buf[32:36]))
 	data := make([]byte, messageLength-36)
 
 	if _, err := io.ReadFull(c.conn, data); err != nil {
