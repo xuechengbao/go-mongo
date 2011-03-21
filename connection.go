@@ -126,8 +126,7 @@ func (c *connection) Update(namespace string, document, selector interface{}, op
 	b.WriteUint32(0)             // responseTo
 	b.WriteUint32(2001)          // opCode
 	b.WriteUint32(0)             // reserved
-	b.WriteString(namespace)     // namespace
-	b.WriteByte(0)               // null terminator
+	b.WriteCString(namespace)    // namespace
 	b.WriteUint32(uint32(flags)) // flags
 	b, err = Encode(b, document)
 	if err != nil {
@@ -150,8 +149,7 @@ func (c *connection) Insert(namespace string, documents ...interface{}) (err os.
 	b.WriteUint32(0)          // responseTo
 	b.WriteUint32(2002)       // opCode
 	b.WriteUint32(0)          // reserved
-	b.WriteString(namespace)  // namespace
-	b.WriteByte(0)            // null terminator
+	b.WriteCString(namespace) // namespace
 	for _, document := range documents {
 		b, err = Encode(b, document)
 		if err != nil {
@@ -175,8 +173,7 @@ func (c *connection) Remove(namespace string, selector interface{}, options *Rem
 	b.WriteUint32(0)             // responseTo
 	b.WriteUint32(2006)          // opCode
 	b.WriteUint32(0)             // reserved
-	b.WriteString(namespace)     // namespace
-	b.WriteByte(0)               // null terminator
+	b.WriteCString(namespace)    // namespace
 	b.WriteUint32(uint32(flags)) // flags
 	b, err = Encode(b, selector)
 	if err != nil {
@@ -229,8 +226,7 @@ func (c *connection) Find(namespace string, query interface{}, options *FindOpti
 	b.WriteUint32(0)                  // responseTo
 	b.WriteUint32(2004)               // opCode
 	b.WriteUint32(uint32(r.flags))    // flags
-	b.WriteString(namespace)          // namespace
-	b.WriteByte(0)                    // null terminator
+	b.WriteCString(namespace)         // namespace
 	b.WriteUint32(uint32(skip))       // numberToSkip
 	b.WriteUint32(r.numberToReturn()) // numberToReturn
 	b, err := Encode(b, query)
@@ -255,13 +251,12 @@ func (c *connection) Find(namespace string, query interface{}, options *FindOpti
 func (c *connection) getMore(r *cursor) os.Error {
 	r.requestId = c.nextId()
 	b := buffer(c.buf[:0])
-	b.Next(4)                  // placeholder for message length
-	b.WriteUint32(r.requestId) // requestId
-	b.WriteUint32(0)           // responseTo
-	b.WriteUint32(2005)        // opCode
-	b.WriteUint32(0)           // reserved
-	b.WriteString(r.namespace) // namespace
-	b.WriteByte(0)             // null terminator
+	b.Next(4)                   // placeholder for message length
+	b.WriteUint32(r.requestId)  // requestId
+	b.WriteUint32(0)            // responseTo
+	b.WriteUint32(2005)         // opCode
+	b.WriteUint32(0)            // reserved
+	b.WriteCString(r.namespace) // namespace
 	b.WriteUint32(r.numberToReturn())
 	b.WriteUint64(r.cursorId)
 	if err := c.send(b); err != nil {

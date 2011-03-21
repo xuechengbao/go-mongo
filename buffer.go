@@ -36,8 +36,9 @@ func (b *buffer) Next(n int) []byte {
 	return (*b)[begin:end]
 }
 
-func (b *buffer) WriteString(s string) {
+func (b *buffer) WriteCString(s string) {
 	copy(b.Next(len(s)), s)
+	b.Next(1)[0] = 0
 }
 
 func (b *buffer) Write(p []byte) {

@@ -537,7 +537,7 @@ func (d *decodeState) decodeValueInterface(kind int) interface{} {
 		copy(newp, p)
 		return newp
 	case kindObjectId:
-        return ObjectId(string(d.scanSlice(12)))
+		return ObjectId(string(d.scanSlice(12)))
 	case kindBool:
 		return d.scanBool()
 	case kindDateTime:

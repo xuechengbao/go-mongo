@@ -149,8 +149,7 @@ func (e *encodeState) endDoc(offset int) {
 
 func (e *encodeState) writeKindName(kind int, name string) {
 	e.WriteByte(byte(kind))
-	e.WriteString(name)
-	e.WriteByte(0)
+	e.WriteCString(name)
 }
 
 func (e *encodeState) writeStruct(v *reflect.StructValue) {
@@ -260,8 +259,7 @@ func encodeString(e *encodeState, kind int, name string, fi *fieldInfo, value re
 	}
 	e.writeKindName(kind, name)
 	e.WriteUint32(uint32(len(s) + 1))
-	e.WriteString(s)
-	e.WriteByte(0)
+	e.WriteCString(s)
 }
 
 func encodeRegexp(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
@@ -270,22 +268,20 @@ func encodeRegexp(e *encodeState, name string, fi *fieldInfo, value reflect.Valu
 		return
 	}
 	e.writeKindName(kindRegexp, name)
-	e.WriteString(r.Pattern)
-	e.WriteByte(0)
-	e.WriteString(r.Options)
-	e.WriteByte(0)
+	e.WriteCString(r.Pattern)
+	e.WriteCString(r.Options)
 }
 
 func encodeObjectId(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
 	oid := value.Interface().(ObjectId)
-    if oid == "" {
-        return
-    }
-    if len(oid) != 12 {
-        e.abort(os.NewError("bson: object id length != 12"))
-    }
+	if oid == "" {
+		return
+	}
+	if len(oid) != 12 {
+		e.abort(os.NewError("bson: object id length != 12"))
+	}
 	e.writeKindName(kindObjectId, name)
-    e.WriteString(string(oid))
+	copy(e.Next(12), oid)
 }
 
 func encodeBSONData(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
@@ -305,8 +301,7 @@ func encodeCodeWithScope(e *encodeState, name string, fi *fieldInfo, value refle
 	e.writeKindName(kindCodeWithScope, name)
 	offset := e.beginDoc()
 	e.WriteUint32(uint32(len(c.Code) + 1))
-	e.WriteString(c.Code)
-	e.WriteByte(0)
+	e.WriteCString(c.Code)
 	scopeOffset := e.beginDoc()
 	for k, v := range c.Scope {
 		e.encodeValue(k, defaultFieldInfo, reflect.NewValue(v))
@@ -339,30 +334,30 @@ func encodeStruct(e *encodeState, name string, fi *fieldInfo, value reflect.Valu
 func encodeMap(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
 	v := value.(*reflect.MapValue)
 	if v.IsNil() {
-        return
+		return
 	}
-    e.writeKindName(kindDocument, name)
+	e.writeKindName(kindDocument, name)
 	e.writeMap(v, false)
 }
 
 func encodeDoc(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
 	v := value.Interface().(Doc)
 	if v == nil {
-        return
+		return
 	}
-    e.writeKindName(kindDocument, name)
-    e.writeDoc(v)
+	e.writeKindName(kindDocument, name)
+	e.writeDoc(v)
 }
 
 func encodeByteSlice(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
 	b := value.Interface().([]byte)
 	if b == nil {
-        return
+		return
 	}
-    e.writeKindName(kindBinary, name)
-    e.WriteUint32(uint32(len(b)))
-    e.WriteByte(0)
-    e.Write(b)
+	e.writeKindName(kindBinary, name)
+	e.WriteUint32(uint32(len(b)))
+	e.WriteByte(0)
+	e.Write(b)
 }
 
 func encodeSlice(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
@@ -395,7 +390,7 @@ func encodeArray(e *encodeState, name string, fi *fieldInfo, value reflect.Value
 func encodeInterfaceOrPtr(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
 	v := value.(interfaceOrPtrValue)
 	if v.IsNil() {
-        return
+		return
 	} else {
 		e.encodeValue(name, defaultFieldInfo, v.Elem())
 	}
@@ -436,9 +431,9 @@ func init() {
 		reflect.Typeof(DateTime(0)): func(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
 			encodeInt64(e, kindDateTime, name, fi, value)
 		},
-		reflect.Typeof(MinMax(0)):  encodeMinMax,
+		reflect.Typeof(MinMax(0)):    encodeMinMax,
 		reflect.Typeof(ObjectId("")): encodeObjectId,
-		reflect.Typeof(Regexp{}):   encodeRegexp,
+		reflect.Typeof(Regexp{}):     encodeRegexp,
 		reflect.Typeof(Symbol("")): func(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
 			encodeString(e, kindSymbol, name, fi, value)
 		},

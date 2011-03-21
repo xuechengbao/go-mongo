@@ -67,7 +67,7 @@ type ObjectId string
 func NewObjectId() ObjectId {
 	t := time.Seconds()
 	c := nextOidCounter()
-    b := [12]byte{
+	b := [12]byte{
 		byte(t >> 24),
 		byte(t >> 16),
 		byte(t >> 8),
@@ -80,7 +80,7 @@ func NewObjectId() ObjectId {
 		byte(c >> 16),
 		byte(c >> 8),
 		byte(c)}
-    return ObjectId(b[:])
+	return ObjectId(b[:])
 }
 
 var (
