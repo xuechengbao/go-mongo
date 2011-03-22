@@ -93,7 +93,7 @@ func NewObjectId() ObjectId {
 
 // NewObjectIdString returns an object id initialized from the hexadecimal
 // encoding of the object id.
-func NewObjectIdString(hexString string) (ObjectId, os.Error) {
+func NewObjectIdHex(hexString string) (ObjectId, os.Error) {
 	p, err := hex.DecodeString(hexString)
 	if err != nil {
 		return "", err

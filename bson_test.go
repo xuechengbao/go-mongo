@@ -272,7 +272,7 @@ func TestObjectId(t *testing.T) {
 	if min.CreationTime() != t1 {
 		t.Errorf("min.CreationTime() = %d, want %d", min.CreationTime(), t1)
 	}
-	id2, err := NewObjectIdString(id.String())
+	id2, err := NewObjectIdHex(id.String())
 	if err != nil {
 		t.Errorf("NewObjectIdString returned %q", err)
 	}
