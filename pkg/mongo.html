@@ -64,7 +64,12 @@
             </ul>
 <li><a href="#ObjectId">type ObjectId</a>
         <ul>
+    <li><a href="#MaxObjectIdForTime">func MaxObjectIdForTime</a>
+    <li><a href="#MinObjectIdForTime">func MinObjectIdForTime</a>
     <li><a href="#NewObjectId">func NewObjectId</a>
+    <li><a href="#NewObjectIdString">func NewObjectIdString</a>
+    <li><a href="#ObjectId.CreationTime">func (ObjectId) CreationTime</a>
+    <li><a href="#ObjectId.String">func (ObjectId) String</a>
         </ul>
 <li><a href="#Pool">type Pool</a>
         <ul>
@@ -72,7 +77,7 @@
     <li><a href="#NewPool">func NewPool</a>
     <li><a href="#Pool.Get">func (*Pool) Get</a>
         </ul>
-<li><a href="#Query">type Query</a>
+<li><a href="#QuerySpec">type QuerySpec</a>
 <li><a href="#Regexp">type Regexp</a>
 <li><a href="#RemoveOptions">type RemoveOptions</a>
 <li><a href="#SafeConn">type SafeConn</a>
@@ -497,7 +502,7 @@ pairs is important.
 
 
 
-    <h3 id="Doc.Append">func (*Doc) <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L126">Append</a></h3>
+    <h3 id="Doc.Append">func (*Doc) <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L164">Append</a></h3>
     <p><code>func (d *Doc) Append(name string, value interface{})</code></p>
     <p>
 Append adds an item to doc.
@@ -656,13 +661,27 @@ ObjectId represents a BSON object identifier.
 
 
 
-    <h3 id="NewObjectId">func <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L67">NewObjectId</a></h3>
+    <h3 id="MaxObjectIdForTime">func <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L109">MaxObjectIdForTime</a></h3>
+    <p><code>func MaxObjectIdForTime(t int64) ObjectId</code></p>
+    <p>
+MaxObjectIdForTime returns the maximum object id for time t in seconds from
+the epoch.
+</p>
+
+    <h3 id="MinObjectIdForTime">func <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L115">MinObjectIdForTime</a></h3>
+    <p><code>func MinObjectIdForTime(t int64) ObjectId</code></p>
+    <p>
+MinObjectIdForTime returns the minimum object id for time t in seconds from
+the epoch.
+</p>
+
+    <h3 id="NewObjectId">func <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L90">NewObjectId</a></h3>
     <p><code>func NewObjectId() ObjectId</code></p>
     <p>
 NewObjectId returns a new object id. This function uses the following format
 for object ids:
 </p>
-<pre>[0:4]  Time since epoch in seconds. This is compatible
+<pre>[0:4]  Big endian time since epoch in seconds. This is compatible
        with other drivers.
 
 [4:12] Incrementing counter initialized with crypto random
@@ -670,7 +689,23 @@ for object ids:
        is simpler than the format used by other drivers.
 </pre>
 
+    <h3 id="NewObjectIdString">func <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L96">NewObjectIdString</a></h3>
+    <p><code>func NewObjectIdString(hexString string) (ObjectId, os.Error)</code></p>
+    <p>
+NewObjectIdString returns an object id initialized from the hexadecimal
+encoding of the object id.
+</p>
 
+
+    <h3 id="ObjectId.CreationTime">func (ObjectId) <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L120">CreationTime</a></h3>
+    <p><code>func (id ObjectId) CreationTime() int64</code></p>
+    <p>
+CreationTime extracts the time the object id was created in seconds since the epoch.
+</p>
+
+    <h3 id="ObjectId.String">func (ObjectId) <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L60">String</a></h3>
+    <p><code>func (id ObjectId) String() string</code></p>
+    
 
 <h2 id="Pool">type Pool</h2>
 <p>
@@ -734,12 +769,12 @@ connection to the pool.
 </p>
 
 
-<h2 id="Query">type Query</h2>
+<h2 id="QuerySpec">type QuerySpec</h2>
 <p>
-Query is a helper for specifying complex queries.
+QuerySpec is a helper for specifying complex queries.
 </p>
 
-<pre>type Query struct {
+<pre>type QuerySpec struct {
  // The filter. This field is required.
  Query interface{} &#34;$query&#34;
 
@@ -749,7 +784,7 @@ Query is a helper for specifying complex queries.
 
  // If set to true, then the query returns an explain plan record the query.
  // See http://www.mongodb.org/display/DOCS/Optimization#Optimization-Explain
- Explain bool &#34;$explain&#34;
+ Explain bool &#34;$explain/c&#34;
 
  // Index hint specified by (key, direction) pairs. 
  // See http://www.mongodb.org/display/DOCS/Optimization#Optimization-Hint
@@ -758,7 +793,7 @@ Query is a helper for specifying complex queries.
  // Snapshot mode assures that objects which update during the lifetime of a
  // query are returned once and only once.
  // See http://www.mongodb.org/display/DOCS/How+to+do+Snapshotted+Queries+in+the+Mongo+Database
- Snapshot bool &#34;$snapshot&#34;
+ Snapshot bool &#34;$snapshot/c&#34;
 
  // Min and Max constrain matches to those having index keys between the min
  // and max keys specified.The Min value is included in the range and the
