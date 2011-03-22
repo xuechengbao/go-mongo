@@ -17,6 +17,7 @@ package mongo
 import (
 	"crypto/rand"
 	"encoding/binary"
+	"encoding/hex"
 	"reflect"
 	"strconv"
 	"sync"
@@ -55,18 +56,12 @@ type Regexp struct {
 // ObjectId represents a BSON object identifier. 
 type ObjectId string
 
-// NewObjectId returns a new object id. This function uses the following format
-// for object ids:
-//
-//  [0:4]  Time since epoch in seconds. This is compatible 
-//         with other drivers.
-// 
-//  [4:12] Incrementing counter initialized with crypto random
-//         number. This ensures that object ids are unique, but
-//         is simpler than the format used by other drivers.
-func NewObjectId() ObjectId {
-	t := time.Seconds()
-	c := nextOidCounter()
+
+func (id ObjectId) String() string {
+	return hex.EncodeToString([]byte(string(id)))
+}
+
+func newObjectId(t int64, c uint64) ObjectId {
 	b := [12]byte{
 		byte(t >> 24),
 		byte(t >> 16),
@@ -81,6 +76,49 @@ func NewObjectId() ObjectId {
 		byte(c >> 8),
 		byte(c)}
 	return ObjectId(b[:])
+}
+
+// NewObjectId returns a new object id. This function uses the following format
+// for object ids:
+//
+//  [0:4]  Big endian time since epoch in seconds. This is compatible 
+//         with other drivers.
+// 
+//  [4:12] Incrementing counter initialized with crypto random
+//         number. This ensures that object ids are unique, but
+//         is simpler than the format used by other drivers.
+func NewObjectId() ObjectId {
+	return newObjectId(time.Seconds(), nextOidCounter())
+}
+
+// NewObjectIdString returns an object id initialized from the hexadecimal
+// encoding of the object id.
+func NewObjectIdString(hexString string) (ObjectId, os.Error) {
+	p, err := hex.DecodeString(hexString)
+	if err != nil {
+		return "", err
+	}
+	if len(p) != 12 {
+		return "", os.NewError("mongo: bad object id string len")
+	}
+	return ObjectId(p), nil
+}
+
+// MaxObjectIdForTime returns the maximum object id for time t in seconds from
+// the epoch.
+func MaxObjectIdForTime(t int64) ObjectId {
+	return newObjectId(t, 0xffffffffffffffff)
+}
+
+// MinObjectIdForTime returns the minimum object id for time t in seconds from
+// the epoch.
+func MinObjectIdForTime(t int64) ObjectId {
+	return newObjectId(t, 0)
+}
+
+// CreationTime extracts the time the object id was created in seconds since the epoch.
+func (id ObjectId) CreationTime() int64 {
+	return int64(id[0])<<24 + int64(id[1])<<16 + int64(id[2])<<8 + int64(id[3])
 }
 
 var (

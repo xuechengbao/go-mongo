@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"testing"
 	"reflect"
+	"time"
 )
 
 func testMap(value interface{}) map[string]interface{} {
@@ -254,5 +255,28 @@ func TestEncodeOrderedMap(t *testing.T) {
 		t.Error("error encoding map %s", err)
 	} else if !bytes.Equal(expected, actual) {
 		t.Errorf("  expected %q\n  actual   %q", expected, actual)
+	}
+}
+
+func TestObjectId(t *testing.T) {
+	t1 := time.Seconds()
+	min := MinObjectIdForTime(t1)
+	id := NewObjectId()
+	max := MaxObjectIdForTime(time.Seconds())
+	if id < min {
+		t.Errorf("%q < %q", id, min)
+	}
+	if id > max {
+		t.Errorf("%q > %q", id, max)
+	}
+	if min.CreationTime() != t1 {
+		t.Errorf("min.CreationTime() = %d, want %d", min.CreationTime(), t1)
+	}
+	id2, err := NewObjectIdString(id.String())
+	if err != nil {
+		t.Errorf("NewObjectIdString returned %q", err)
+	}
+	if id2 != id {
+		t.Errorf("%q != %q", id2, id)
 	}
 }
