@@ -348,12 +348,34 @@ func (c *connection) receive() os.Error {
 }
 
 func (r *cursor) numberToReturn() uint32 {
-	n := r.batchSize
+	batchSize := r.batchSize
+	if batchSize < 0 {
+		batchSize *= -1
+	}
+
+	remaining := 0
 	if r.limit > 0 {
-		n = r.limit - r.count
-		if r.batchSize > 0 && r.batchSize < n {
-			n = r.batchSize
-		}
+		remaining = r.limit - r.count
+	}
+
+	n := 0
+	switch {
+	case batchSize == 0 && remaining > 0:
+		n = remaining
+	case batchSize > 0 && remaining == 0:
+		n = batchSize
+	case remaining < batchSize:
+		n = remaining
+	default:
+		n = batchSize
+	}
+
+	if r.batchSize < 0 {
+		n *= -1
+	}
+
+	if n == 1 {
+		n = -1
 	}
 	return uint32(n)
 }
