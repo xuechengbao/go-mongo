@@ -19,8 +19,8 @@ import (
 	"strings"
 )
 
-// Query is a helper for specifying complex queries.
-type Query struct {
+// QuerySpec is a helper for specifying complex queries.
+type QuerySpec struct {
 	// The filter. This field is required.
 	Query interface{} "$query"
 
@@ -30,7 +30,7 @@ type Query struct {
 
 	// If set to true, then the query returns an explain plan record the query.
 	// See http://www.mongodb.org/display/DOCS/Optimization#Optimization-Explain
-	Explain bool "$explain"
+	Explain bool "$explain/c"
 
 	// Index hint specified by (key, direction) pairs. 
 	// See http://www.mongodb.org/display/DOCS/Optimization#Optimization-Hint
@@ -39,7 +39,7 @@ type Query struct {
 	// Snapshot mode assures that objects which update during the lifetime of a
 	// query are returned once and only once.
 	// See http://www.mongodb.org/display/DOCS/How+to+do+Snapshotted+Queries+in+the+Mongo+Database
-	Snapshot bool "$snapshot"
+	Snapshot bool "$snapshot/c"
 
 	// Min and Max constrain matches to those having index keys between the min
 	// and max keys specified.The Min value is included in the range and the

@@ -51,7 +51,7 @@ func TestQuery(t *testing.T) {
 	}
 
 	var m map[string]interface{}
-	err := FindOne(c, "go-mongo-test.test", &Query{Query: Doc{}, Sort: Doc{{"x", -1}}}, nil, &m)
+	err := FindOne(c, "go-mongo-test.test", &QuerySpec{Query: Doc{}, Sort: Doc{{"x", -1}}}, nil, &m)
 	if err != nil {
 		t.Fatal("findone", err)
 	}
