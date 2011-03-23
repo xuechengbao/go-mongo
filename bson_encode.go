@@ -75,9 +75,11 @@ type encodeState struct {
 //      bool                -> Boolean
 //      float32             -> Double
 //      float64             -> Double
-//      int32               -> 32-bit Integer
 //      int                 -> 32-bit Integer
+//      int8, int16, int32  -> 32-bit Integer
 //      int64               -> 64-bit Integer
+//      uint8, uint16       -> 32-bit Integer
+//      uint, uint32        -> 64-bit Integer
 //      string              -> String
 //      []byte              -> Binary data
 //      mongo.Code          -> Javascript code
@@ -225,8 +227,17 @@ func encodeBool(e *encodeState, name string, fi *fieldInfo, value reflect.Value)
 	}
 }
 
-func encodeInt(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
+func encodeInt32(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
 	i := value.(*reflect.IntValue).Get()
+	if i == 0 && fi.conditional {
+		return
+	}
+	e.writeKindName(kindInt32, name)
+	e.WriteUint32(uint32(i))
+}
+
+func encodeUint32(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
+	i := value.(*reflect.UintValue).Get()
 	if i == 0 && fi.conditional {
 		return
 	}
@@ -241,6 +252,15 @@ func encodeInt64(e *encodeState, kind int, name string, fi *fieldInfo, value ref
 	}
 	e.writeKindName(kind, name)
 	e.WriteUint64(uint64(i))
+}
+
+func encodeUint64(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
+	i := value.(*reflect.UintValue).Get()
+	if i == 0 && fi.conditional {
+		return
+	}
+	e.writeKindName(kindInt64, name)
+	e.WriteUint64(i)
 }
 
 func encodeFloat(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
@@ -407,11 +427,17 @@ func init() {
 		reflect.Bool:    encodeBool,
 		reflect.Float32: encodeFloat,
 		reflect.Float64: encodeFloat,
-		reflect.Int32:   encodeInt,
+		reflect.Int8:    encodeInt32,
+		reflect.Int16:   encodeInt32,
+		reflect.Int32:   encodeInt32,
+		reflect.Int:     encodeInt32,
+		reflect.Uint8:   encodeUint32,
+		reflect.Uint16:  encodeUint32,
+		reflect.Uint32:  encodeUint64,
+		reflect.Uint:    encodeUint64,
 		reflect.Int64: func(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
 			encodeInt64(e, kindInt64, name, fi, value)
 		},
-		reflect.Int:       encodeInt,
 		reflect.Interface: encodeInterfaceOrPtr,
 		reflect.Map:       encodeMap,
 		reflect.Ptr:       encodeInterfaceOrPtr,

@@ -63,8 +63,36 @@ type stSymbol struct {
 	Test Symbol "test/c"
 }
 
+type stInt8 struct {
+	Test int8 "test/c"
+}
+
+type stInt16 struct {
+	Test int16 "test/c"
+}
+
 type stInt32 struct {
 	Test int32 "test/c"
+}
+
+type stInt struct {
+	Test int "test/c"
+}
+
+type stUint8 struct {
+	Test uint8 "test/c"
+}
+
+type stUint16 struct {
+	Test uint16 "test/c"
+}
+
+type stUint32 struct {
+	Test uint32 "test/c"
+}
+
+type stUint struct {
+	Test uint "test/c"
 }
 
 type stInt64 struct {
@@ -123,7 +151,14 @@ var bsonTests = []struct {
 	{nil, stObjectId{}, nil, "\x05\x00\x00\x00\x00"},
 	{nil, stBool{}, nil, "\x05\x00\x00\x00\x00"},
 	{nil, stSymbol{}, nil, "\x05\x00\x00\x00\x00"},
+	{nil, stInt8{}, nil, "\x05\x00\x00\x00\x00"},
+	{nil, stInt16{}, nil, "\x05\x00\x00\x00\x00"},
 	{nil, stInt32{}, nil, "\x05\x00\x00\x00\x00"},
+	{nil, stUint{}, nil, "\x05\x00\x00\x00\x00"},
+	{nil, stUint8{}, nil, "\x05\x00\x00\x00\x00"},
+	{nil, stUint16{}, nil, "\x05\x00\x00\x00\x00"},
+	{nil, stUint32{}, nil, "\x05\x00\x00\x00\x00"},
+	{nil, stUint{}, nil, "\x05\x00\x00\x00\x00"},
 	{nil, stInt64{}, nil, "\x05\x00\x00\x00\x00"},
 	{nil, stMinMax{}, nil, "\x05\x00\x00\x00\x00"},
 	{nil, stCodeWithScope{}, nil, "\x05\x00\x00\x00\x00"},
@@ -133,55 +168,92 @@ var bsonTests = []struct {
 
 	{new(stEmpty), stEmpty{}, map[string]interface{}{},
 		"\x05\x00\x00\x00\x00"},
+
 	{new(stFloat64), stFloat64{1.5}, testMap(float64(1.5)),
 		"\x13\x00\x00\x00\x01test\x00\x00\x00\x00\x00\x00\x00\xf8?\x00"},
+
 	{new(stString), stString{"world"}, testMap("world"),
 		"\x15\x00\x00\x00\x02test\x00\x06\x00\x00\x00world\x00\x00"},
+
 	{new(stAny), stAny{"world"}, testMap("world"),
 		"\x15\x00\x00\x00\x02test\x00\x06\x00\x00\x00world\x00\x00"},
+
 	{new(stDoc), stDoc{make(map[string]interface{})}, testMap(make(map[string]interface{})),
 		"\x10\x00\x00\x00\x03test\x00\x05\x00\x00\x00\x00\x00"},
+
 	{new(stBinary), stBinary{[]byte("test")}, testMap([]byte("test")),
 		"\x14\x00\x00\x00\x05\x74\x65\x73\x74\x00\x04\x00\x00\x00\x00\x74\x65\x73\x74\x00"},
+
 	{new(stObjectId), stObjectId{ObjectId("\x4C\x9B\x8F\xB4\xA3\x82\xAA\xFE\x17\xC8\x6E\x63")},
 		testMap(ObjectId("\x4C\x9B\x8F\xB4\xA3\x82\xAA\xFE\x17\xC8\x6E\x63")),
 		"\x17\x00\x00\x00\x07test\x00\x4C\x9B\x8F\xB4\xA3\x82\xAA\xFE\x17\xC8\x6E\x63\x00"},
 	{new(stObjectId), stObjectId{ObjectId("")},
 		map[string]interface{}{},
 		"\x05\x00\x00\x00\x00"},
+
 	{new(ncBool), ncBool{true}, testMap(true),
 		"\x0C\x00\x00\x00\x08test\x00\x01\x00"},
 	{new(ncBool), ncBool{false}, testMap(false),
 		"\x0C\x00\x00\x00\x08test\x00\x00\x00"},
+
 	{new(stSymbol), stSymbol{Symbol("aSymbol")}, testMap(Symbol("aSymbol")),
 		"\x17\x00\x00\x00\x0Etest\x00\x08\x00\x00\x00aSymbol\x00\x00"},
-	{new(stInt32), stInt32{10}, testMap(10),
+
+	{nil, stInt8{10}, testMap(int8(10)),
 		"\x0F\x00\x00\x00\x10test\x00\x0A\x00\x00\x00\x00"},
+	{nil, stInt16{10}, testMap(int16(10)),
+		"\x0F\x00\x00\x00\x10test\x00\x0A\x00\x00\x00\x00"},
+	{nil, stInt32{10}, testMap(int32(10)),
+		"\x0F\x00\x00\x00\x10test\x00\x0A\x00\x00\x00\x00"},
+	{new(stInt), stInt{10}, testMap(10),
+		"\x0F\x00\x00\x00\x10test\x00\x0A\x00\x00\x00\x00"},
+
+	{nil, stUint8{10}, testMap(uint8(10)),
+		"\x0F\x00\x00\x00\x10test\x00\x0A\x00\x00\x00\x00"},
+	{nil, stUint16{10}, testMap(uint16(10)),
+		"\x0F\x00\x00\x00\x10test\x00\x0A\x00\x00\x00\x00"},
+
+	{nil, stUint32{256}, testMap(uint32(256)),
+		"\x13\x00\x00\x00\x12test\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00"},
+	{nil, stUint{256}, testMap(uint(256)),
+		"\x13\x00\x00\x00\x12test\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00"},
+
 	{new(stInt64), stInt64{256}, testMap(int64(256)),
 		"\x13\x00\x00\x00\x12test\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00"},
+
 	{new(stMinMax), stMinMax{MaxValue}, testMap(MaxValue),
 		"\x0B\x00\x00\x00\x7Ftest\x00\x00"},
 	{new(stMinMax), stMinMax{MinValue}, testMap(MinValue),
 		"\x0B\x00\x00\x00\xFFtest\x00\x00"},
+
 	{nil, stRegexp{Regexp{"a*b", "i"}}, testMap(Regexp{"a*b", "i"}),
 		"\x11\x00\x00\x00\vtest\x00a*b\x00i\x00\x00"},
+
 	{nil, stCodeWithScope{CodeWithScope{"test", nil}}, testMap(CodeWithScope{"test", nil}),
 		"\x1d\x00\x00\x00\x0ftest\x00\x12\x00\x00\x00\x05\x00\x00\x00test\x00\x05\x00\x00\x00\x00\x00"},
+
 	{new(stTimestamp), stTimestamp{1168216211000}, testMap(Timestamp(1168216211000)),
 		"\x13\x00\x00\x00\x11test\x008\xbe\x1c\xff\x0f\x01\x00\x00\x00"},
+
 	{new(stDateTime), stDateTime{1168216211000}, testMap(DateTime(1168216211000)),
 		"\x13\x00\x00\x00\ttest\x008\xbe\x1c\xff\x0f\x01\x00\x00\x00"},
+
 	{new(stStringSlice), stStringSlice{[]string{}}, testMap([]interface{}{}),
 		"\x10\x00\x00\x00\x04test\x00\x05\x00\x00\x00\x00\x00"},
+
 	{new(stStringSlice), stStringSlice{[]string{"hello"}}, testMap([]interface{}{"hello"}),
 		"\x1d\x00\x00\x00\x04test\x00\x12\x00\x00\x00\x020\x00\x06\x00\x00\x00hello\x00\x00\x00"},
+
 	{new(stStringArray), stStringArray{[1]string{"hello"}}, testMap([]interface{}{"hello"}),
 		"\x1d\x00\x00\x00\x04test\x00\x12\x00\x00\x00\x020\x00\x06\x00\x00\x00hello\x00\x00\x00"},
+
 	{new(BSONData), BSONData{Kind: kindDocument, Data: []byte("\x15\x00\x00\x00\x02test\x00\x06\x00\x00\x00world\x00\x00")},
 		testMap("world"),
 		"\x15\x00\x00\x00\x02test\x00\x06\x00\x00\x00world\x00\x00"},
+
 	{new(stId), stId{Test: 2, Id: 1}, map[string]interface{}{"test": 2, "_id": 1},
 		"\x18\x00\x00\x00\x10_id\x00\x01\x00\x00\x00\x10test\x00\x02\x00\x00\x00\x00"},
+
 	{new(stEmbed), stEmbed{stInt32: stInt32{2}, Id: 1}, map[string]interface{}{"test": 2, "_id": 1},
 		"\x18\x00\x00\x00\x10_id\x00\x01\x00\x00\x00\x10test\x00\x02\x00\x00\x00\x00"},
 }
