@@ -31,6 +31,7 @@ const (
 	queryNoCursorTimeout = 1 << 4
 	queryAwaitData       = 1 << 5
 	queryExhaust         = 1 << 6
+	queryPartialResults  = 1 << 7
 )
 
 type connection struct {
@@ -217,6 +218,9 @@ func (c *connection) Find(namespace string, query interface{}, options *FindOpti
 		}
 		if options.Exhaust {
 			r.flags |= queryExhaust
+		}
+		if options.PartialResults {
+			r.flags |= queryPartialResults
 		}
 	}
 

@@ -26,18 +26,18 @@ var (
 
 // RemoveOptions specifies options for the Conn.Remove method.
 type RemoveOptions struct {
-	// If true, then the database will remove only the first matching document in the
-	// collection. Otherwise all matching documents will be removed.
+	// If true, then the database removes the first matching document in the
+	// collection. Otherwise all matching documents are removed.
 	Single bool
 }
 
 // UpdateOptions specifies options for the Conn.Update method.
 type UpdateOptions struct {
-	// If true, then the database will insert the supplied object into the
+	// If true, then the database inserts the supplied object into the
 	// collection if no matching document is found.
 	Upsert bool
 
-	// If true, then the database will update all objects matching the query.
+	// If true, then the database updates all objects matching the query.
 	Multi bool
 }
 
@@ -48,32 +48,28 @@ type FindOptions struct {
 	// field that should be returned, and the integer value 1. 
 	Fields interface{}
 
-	// Tailable means cursor is not closed when the last data is retrieved.
-	// Rather, the cursor marks the final object's position. You can resume
-	// using the cursor later, from where it was located, if more data were
-	// received. 
+	// Do not close the cursor when no more data is available on the server.
 	Tailable bool
 
-	// Allow query of replica slave. Normally these return an error except for
-	// namespace "local".
+	// Allow query of replica slave. 
 	SlaveOk bool
 
-	// The server normally times out idle cursors after an inactivity period
-	// (10 minutes) to prevent excess memory use. Set this option to prevent
-	// that.
+	// Do not close the cursor on the server after a period of inactivity (10
+	// minutes).
 	NoCursorTimeout bool
 
-	// Use with TailableCursor. If we are at the end of the data, block for a
-	// while rather than returning no data. After a timeout period, we do
-	// return as normal.
+	// Block at server for a short time if there's no data for a tailable cursor.
 	AwaitData bool
 
-	// Stream the data down full blast in multiple "more" packages, on the
-	// assumption that the client will fully read all data queried. Faster when
-	// you are pulling a lot of data and know you want to pull it all down.
-	// Note: the client is not allowed to not read all the data unless it
-	// closes the connection.
+	// Stream the data down from the server full blast. Normally the server
+	// waits for a "get more" message before sending a chunk of data to the
+	// client.  With this option set, the server sends chunks of data without
+	// waiting for the "get more" messages. 
 	Exhaust bool
+
+	// Allow partial results in sharded environment. Normally the query
+	// will fail if a shard is not available.
+	PartialResults bool
 
 	// Sets the number of documents to omit - starting from the first document
 	// in the resulting dataset - when returning the result of the query.
