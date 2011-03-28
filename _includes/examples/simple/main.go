@@ -15,18 +15,19 @@ func main() {
 
     // Connect to server.
 
-    c, err := mongo.Dial("localhost")
+    conn, err := mongo.Dial("localhost")
     if err != nil {
         log.Fatal(err)
     }
-    defer c.Close()
+    defer conn.Close()
+
+    c := mongo.Collection{conn, "example-db.example-collection", mongo.DefaultLastErrorCmd}
 
     // Insert a document.
 
     id := mongo.NewObjectId()
 
-    err = mongo.SafeInsert(c, "example-db.example-collection", nil,
-        &ExampleDoc{Id: id, Title: "Hello", Body: "Mongo is fun."})
+    err = c.Insert(&ExampleDoc{Id: id, Title: "Hello", Body: "Mongo is fun."})
     if err != nil {
         log.Fatal(err)
     }
@@ -34,11 +35,10 @@ func main() {
     // Find the document.
 
     var doc ExampleDoc
-    err = mongo.FindOne(c, "example-db.example-collection",
-        map[string]interface{}{"_id": id}, nil, &doc)
+    err = c.Find(map[string]interface{}{"_id": id}).One(&doc)
     if err != nil {
         log.Fatal(err)
     }
 
-    log.Print(doc.Title, doc.Body)
+    log.Print(doc.Title, " ", doc.Body)
 }
