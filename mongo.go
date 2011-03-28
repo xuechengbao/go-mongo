@@ -13,6 +13,13 @@
 // under the License.
 
 // The mongo package is a driver for MongoDB. 
+//
+// The core interface to MongoDB is defined by the Conn interface. This
+// interface provides access to all MongoDB functionality, but it is is not
+// always convenient to use for common tasks.
+//
+// The Database, Collection and Query types provide a number of convenience
+// methods for working with Conn objects. 
 package mongo
 
 import (

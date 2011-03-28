@@ -497,7 +497,6 @@ func (r *cursor) Next(value interface{}) os.Error {
 		return EOF
 	}
 	if len(r.resp[0].data) < 4 {
-		fmt.Println("DATA", len(r.resp[0].data), r.resp[0].count)
 		return r.fatal(os.NewError("mongo: response data corrupted"))
 	}
 	n := int(wire.Uint32(r.resp[0].data[0:4]))

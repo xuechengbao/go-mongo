@@ -25,5 +25,6 @@ GOFILES=\
     pool.go\
     log.go\
     helpers.go\
+    database.go collection.go query.go
  
 include $(GOROOT)/src/Make.pkg

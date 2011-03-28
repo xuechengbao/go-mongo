@@ -18,17 +18,18 @@ import (
 	"testing"
 )
 
-func dialAndDrop(t *testing.T, db string) Conn {
+func dialAndDrop(t *testing.T, dbname string) Database {
 	c, err := Dial("127.0.0.1")
 	if err != nil {
 		t.Fatal("dial", err)
 	}
-	err = RunCommand(c, db, Doc{{"dropDatabase", 1}}, nil)
+	db := Database{c, dbname, DefaultLastErrorCmd}
+	err = db.Run(Doc{{"dropDatabase", 1}}, nil)
 	if err != nil {
-		c.Close()
+		db.Conn.Close()
 		t.Fatal("drop", err)
 	}
-	return c
+	return db
 }
 
 var findOptionsTests = []struct {
@@ -64,21 +65,24 @@ var findOptionsTests = []struct {
 }
 
 func TestFindOptions(t *testing.T) {
-	c := dialAndDrop(t, "go-mongo-test")
-	defer c.Close()
+	db := dialAndDrop(t, "go-mongo-test")
+	defer db.Conn.Close()
+
+	c := db.C("test")
 
 	for i := 0; i < 200; i++ {
-		err := SafeInsert(c, "go-mongo-test.test", nil, map[string]int{"x": i})
+		err := c.Insert(map[string]int{"x": i})
 		if err != nil {
 			t.Fatal("insert", err)
 		}
 	}
 
 	for _, tt := range findOptionsTests {
-		r, err := c.Find("go-mongo-test.test", Doc{}, &FindOptions{
-			Limit:     tt.limit,
-			BatchSize: tt.batchSize,
-			Exhaust:   tt.exhaust})
+		r, err := c.Find(Doc{}).
+			Limit(tt.limit).
+			BatchSize(tt.batchSize).
+			Exhaust(tt.exhaust).
+			Cursor()
 		if err != nil {
 			t.Error("find", err)
 			continue
@@ -100,11 +104,12 @@ func TestFindOptions(t *testing.T) {
 }
 
 func TestTailableCursor(t *testing.T) {
-	c := dialAndDrop(t, "go-mongo-test")
-	defer c.Close()
+	db := dialAndDrop(t, "go-mongo-test")
+	defer db.Conn.Close()
+	c := db.C("capped")
 
-	err := RunCommand(c, "go-mongo-test",
-		Doc{{"create", "capped"},
+	err := db.Run(
+		Doc{{"create", c.Name()},
 			{"capped", true},
 			{"size", 1000.0}},
 		nil)
@@ -115,14 +120,14 @@ func TestTailableCursor(t *testing.T) {
 	var r Cursor
 	for n := 1; n < 4; n++ {
 		for i := 0; i < n; i++ {
-			err = SafeInsert(c, "go-mongo-test.capped", nil, map[string]int{"x": i})
+			err = c.Insert(map[string]int{"x": i})
 			if err != nil {
 				t.Fatal("insert", i, err)
 			}
 		}
 
 		if r == nil {
-			r, err = c.Find("go-mongo-test.capped", Doc{}, &FindOptions{Tailable: true})
+			r, err = c.Find(Doc{}).Tailable(true).Cursor()
 			if err != nil {
 				t.Fatal("find", err)
 			}
@@ -144,36 +149,36 @@ func TestTailableCursor(t *testing.T) {
 		if i != n {
 			t.Fatal("count: expect", n, "actual", i)
 		}
-
 	}
 }
 
 func TestStuff(t *testing.T) {
-	c := dialAndDrop(t, "go-mongo-test")
-	defer c.Close()
-	c = SafeConn{c, nil}
+	db := dialAndDrop(t, "go-mongo-test")
+	defer db.Conn.Close()
+
+	c := db.C("test")
 
 	id := NewObjectId()
-	err := c.Insert("go-mongo-test.test", map[string]interface{}{"_id": id, "x": 1})
+	err := c.Insert(map[string]interface{}{"_id": id, "x": 1})
 	if err != nil {
 		t.Fatal("insert", err)
 	}
 
 	var m map[string]interface{}
-	err = FindOne(c, "go-mongo-test.test", map[string]interface{}{"_id": id}, nil, &m)
+	err = c.Find(map[string]interface{}{"_id": id}).One(&m)
 	if err != nil {
 		t.Fatal("findone", err)
 	}
 
-	err = c.Update("go-mongo-test.test",
+	err = c.Update(
 		map[string]interface{}{"_id": id},
-		map[string]interface{}{"$inc": map[string]interface{}{"x": 1}}, nil)
+		map[string]interface{}{"$inc": map[string]interface{}{"x": 1}})
 	if err != nil {
 		t.Fatal("update", err)
 	}
 
 	m = nil
-	err = FindOne(c, "go-mongo-test.test", map[string]interface{}{"_id": id}, nil, &m)
+	err = c.Find(map[string]interface{}{"_id": id}).One(&m)
 	if err != nil {
 		t.Fatal("findone after update", err)
 	}
@@ -182,23 +187,23 @@ func TestStuff(t *testing.T) {
 		t.Fatal("expect x = 2, got", m["x"])
 	}
 
-	err = c.Remove("go-mongo-test.test", map[string]interface{}{"_id": id}, nil)
+	err = c.Remove(map[string]interface{}{"_id": id})
 	if err != nil {
 		t.Fatal("remove", err)
 	}
 
 	m = nil
-	err = FindOne(c, "go-mongo-test.test", map[string]interface{}{"_id": id}, nil, &m)
+	err = c.Find(map[string]interface{}{"_id": id}).One(&m)
 	if err != EOF {
 		t.Fatal("findone, expect EOF, got", err)
 	}
 
 	// Don't panic of connection closed before cursor.
-	r, err := c.Find("go-mongo-test.test", Doc{}, nil)
+	r, err := c.Find(Doc{}).Cursor()
 	if err != nil {
 		t.Fatal("find", err)
 	}
-	c.Close()
+	db.Conn.Close()
 	r.HasNext()
 	r.Close()
 }

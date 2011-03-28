@@ -16,93 +16,38 @@ package mongo
 
 import (
 	"os"
-	"strings"
 )
 
-// QuerySpec is a helper for specifying complex queries.
-type QuerySpec struct {
-	// The filter. This field is required.
-	Query interface{} "$query"
-
-	// Sort order specified by (key, direction) pairs. The direction is 1 for
-	// ascending order and -1 for descending order.
-	Sort Doc "$orderby"
-
-	// If set to true, then the query returns an explain plan record the query.
-	// See http://www.mongodb.org/display/DOCS/Optimization#Optimization-Explain
-	Explain bool "$explain/c"
-
-	// Index hint specified by (key, direction) pairs. 
-	// See http://www.mongodb.org/display/DOCS/Optimization#Optimization-Hint
-	Hint Doc "$hint"
-
-	// Snapshot mode assures that objects which update during the lifetime of a
-	// query are returned once and only once.
-	// See http://www.mongodb.org/display/DOCS/How+to+do+Snapshotted+Queries+in+the+Mongo+Database
-	Snapshot bool "$snapshot/c"
-
-	// Min and Max constrain matches to those having index keys between the min
-	// and max keys specified.The Min value is included in the range and the
-	// Max value is excluded.
-	// See http://www.mongodb.org/display/DOCS/min+and+max+Query+Specifiers
-	Min interface{} "$min"
-	Max interface{} "$max"
-}
-
-// SplitNamespace splits a namespace into database name and collection name
-// components.
-func SplitNamespace(s string) (string, string) {
-	if i := strings.Index(s, "."); i > 0 {
-		return s[:i], s[i+1:]
-	}
-	return s, ""
-}
-
-// MongoError represents an error for the connection mutation operations.
-type MongoError struct {
-	Err  string
-	N    int
-	Code int
-}
-
-func (e *MongoError) String() string {
-	return e.Err
-}
-
-// CommandResponse contains the common fields in command responses from the
-// server. 
-type CommandResponse struct {
-	Ok     bool   "ok"
-	Errmsg string "errmsg"
-}
-
-// Error returns the error from the response or nil.
-func (s CommandResponse) Error() os.Error {
-	if s.Ok {
-		return nil
-	}
-
-	errmsg := s.Errmsg
-	if errmsg == "" {
-		errmsg = "unspecified error"
-	}
-
-	return os.NewError(errmsg)
-}
-
 // FindOne returns a single result for a query.
+//
+// Deprecated. Use Collection{conn, namespace}.Find(query).One(result)
 func FindOne(conn Conn, namespace string, query interface{}, options *FindOptions, result interface{}) os.Error {
-	o := FindOptions{}
+	q := Collection{Conn: conn, Namespace: namespace}.Find(query)
 	if options != nil {
-		o = *options
+		q.Options = *options
 	}
-	o.Limit = 1
-	cursor, err := conn.Find(namespace, query, &o)
-	if err != nil {
-		return err
-	}
-	defer cursor.Close()
-	return cursor.Next(result)
+	return q.One(result)
+}
+
+// RunCommand executes the command cmd on the database specified by the
+// database component of namespace. The function returns an error if the "ok"
+// field in the command response is false.
+//
+// Deprecated. Use Database{conn, dbname}.Run(cmd, result)
+func RunCommand(conn Conn, namespace string, cmd Doc, result interface{}) os.Error {
+	dbname, _ := SplitNamespace(namespace)
+	return Database{Conn: conn, Name: dbname}.Run(cmd, result)
+}
+
+// LastError returns the last error for a database. The database is specified
+// by the database component of namespace. The command cmd is used to fetch the
+// last error. If cmd is nil, then the command {"getLasetError": 1} is used to
+// get the error. 
+//
+// Deprecated. Use Database{Conn: conn, Name: dbname}.LastError(cmd)
+func LastError(conn Conn, namespace string, cmd interface{}) os.Error {
+	dbname, _ := SplitNamespace(namespace)
+	return Database{Conn: conn, Name: dbname}.LastError(cmd)
 }
 
 // commandNamespace returns the command namespace give a database name or
@@ -112,80 +57,25 @@ func commandNamespace(namespace string) string {
 	return name + ".$cmd"
 }
 
-// RunCommand executes the command cmd on the database specified by the
-// database component of namespace. The function returns an error if the "ok"
-// field in the command response is false.
-func RunCommand(conn Conn, namespace string, cmd Doc, result interface{}) os.Error {
-
-	var d BSONData
-	if err := FindOne(conn, commandNamespace(namespace), cmd, nil, &d); err != nil {
-		return err
-	}
-	var r CommandResponse
-	if err := Decode(d.Data, &r); err != nil {
-		return err
-	}
-	if err := r.Error(); err != nil {
-		return err
-	}
-	if result != nil {
-		if err := Decode(d.Data, result); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// LastError returns the last error for a database. The database is specified
-// by the database component of namespace. The command cmd is used to fetch the
-// last error. If cmd is nil, then the command {"getLasetError": 1} is used to
-// get the error. 
-func LastError(conn Conn, namespace string, cmd Doc) os.Error {
-	if cmd == nil {
-		cmd = Doc{{"getLastError", 1}}
-	}
-	var r struct {
-		CommandResponse
-		Err  string "err"
-		N    int    "n"
-		Code int    "code"
-	}
-	if err := FindOne(conn, commandNamespace(namespace), cmd, nil, &r); err != nil {
-		return err
-	}
-
-	if err := r.Error(); err != nil {
-		return err
-	}
-
-	if r.Err != "" {
-		return &MongoError{Err: r.Err, N: r.N, Code: r.Code}
-	}
-	return nil
-}
-
 // SafeInsert returns the last error from the database after calling conn.Insert().
-func SafeInsert(conn Conn, namespace string, errorCmd Doc, documents ...interface{}) os.Error {
-	if err := conn.Insert(namespace, documents...); err != nil {
-		return err
-	}
-	return LastError(conn, namespace, errorCmd)
+// 
+// Deprecated. Use SafeConn{conn, errorCmd}.Insert(namespace, documents)
+func SafeInsert(conn Conn, namespace string, errorCmd interface{}, documents ...interface{}) os.Error {
+	return SafeConn{conn, errorCmd}.Insert(namespace, documents...)
 }
 
 // SafeUpdate returns the last error from the database after calling conn.Update().
-func SafeUpdate(conn Conn, namespace string, errorCmd Doc, selector, update interface{}, options *UpdateOptions) os.Error {
-	if err := conn.Update(namespace, selector, update, options); err != nil {
-		return err
-	}
-	return LastError(conn, namespace, errorCmd)
+//
+// Deprecated. Use SafeConn{conn, errorCmd}.Update(namespace, selector, update, options)
+func SafeUpdate(conn Conn, namespace string, errorCmd interface{}, selector, update interface{}, options *UpdateOptions) os.Error {
+	return SafeConn{conn, errorCmd}.Update(namespace, selector, update, options)
 }
 
 // SafeRemove returns the last error from the database after calling conn.Remove().
-func SafeRemove(conn Conn, namespace string, errorCmd Doc, selector interface{}, options *RemoveOptions) os.Error {
-	if err := conn.Remove(namespace, selector, options); err != nil {
-		return err
-	}
-	return LastError(conn, namespace, errorCmd)
+//
+// Deprecated. Use SafeConn{conn, errorCmd}.Remove(namespace, selector, options)
+func SafeRemove(conn Conn, namespace string, errorCmd interface{}, selector interface{}, options *RemoveOptions) os.Error {
+	return SafeConn{conn, errorCmd}.Remove(namespace, selector, options)
 }
 
 // SafeConn wraps a connection with safe mode handling. The wrapper fetches the
@@ -197,48 +87,38 @@ type SafeConn struct {
 
 	// The command document used to fetch the last error. If cmd is nil, then
 	// the command {"getLastError": 1} is used as the command.
-	Cmd Doc
+	Cmd interface{}
+}
+
+func (c SafeConn) checkError(namespace string, err os.Error) os.Error {
+	if err != nil {
+		return err
+	}
+	dbname, _ := SplitNamespace(namespace)
+	return Database{Conn: c.Conn, Name: dbname}.LastError(c.Cmd)
 }
 
 func (c SafeConn) Update(namespace string, selector, update interface{}, options *UpdateOptions) os.Error {
-	return SafeUpdate(c.Conn, namespace, c.Cmd, selector, update, options)
+	return c.checkError(namespace, c.Conn.Update(namespace, selector, update, options))
 }
 
 func (c SafeConn) Insert(namespace string, documents ...interface{}) os.Error {
-	return SafeInsert(c.Conn, namespace, c.Cmd, documents...)
+	return c.checkError(namespace, c.Conn.Insert(namespace, documents...))
 }
 
 func (c SafeConn) Remove(namespace string, selector interface{}, options *RemoveOptions) os.Error {
-	return SafeRemove(c.Conn, namespace, c.Cmd, selector, options)
+	return c.checkError(namespace, c.Conn.Remove(namespace, selector, options))
 }
 
 // Count returns the number of documents for query.
+//
+// Deprecated. Use Collection{Conn: conn, Namespace:namespace}.Find(query).Count()
 func Count(conn Conn, namespace string, query interface{}, options *FindOptions) (int64, os.Error) {
-	_, name := SplitNamespace(namespace)
-	cmd := Doc{{"count", name}}
-	if query != nil {
-		cmd.Append("query", query)
-	}
+	q := Collection{Conn: conn, Namespace: namespace}.Find(query)
 	if options != nil {
-		if options.Limit != 0 {
-			cmd.Append("limit", options.Limit)
-		}
-		if options.Skip != 0 {
-			cmd.Append("skip", options.Skip)
-			// Copy because we don't want to scribble on caller's object.
-			optionsCopy := *options
-			options = &optionsCopy
-			options.Skip = 0
-		}
+		q.Options = *options
 	}
-	var r struct {
-		CommandResponse
-		N int64 "n"
-	}
-	if err := FindOne(conn, commandNamespace(namespace), cmd, options, &r); err != nil {
-		return 0, err
-	}
-	return r.N, r.Error()
+	return q.Count()
 }
 
 // FindAndModifyOptions specifies options for the FindAndUpdate and FindAndRemove functions.
