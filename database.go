@@ -20,8 +20,7 @@ import (
 )
 
 var (
-	runFindOptions      = &FindOptions{BatchSize: -1, SlaveOk: false}
-	defaultLastErrorCmd = Doc{{"getLastError", 1}}
+	runFindOptions = &FindOptions{BatchSize: -1, SlaveOk: false}
 )
 
 // SplitNamespace splits a namespace into database name and collection name
@@ -114,7 +113,7 @@ func (db Database) Run(cmd interface{}, result interface{}) os.Error {
 // then the command {"getLasetError": 1} is used to get the error.
 func (db Database) LastError(cmd interface{}) os.Error {
 	if cmd == nil {
-		cmd = defaultLastErrorCmd
+		cmd = DefaultLastErrorCmd
 	}
 	cursor, err := db.Conn.Find(db.Name+".$cmd", cmd, runFindOptions)
 	if err != nil {

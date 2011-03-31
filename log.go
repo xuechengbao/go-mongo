@@ -18,6 +18,8 @@ import (
 	"os"
 	"log"
 	"sync"
+	"bytes"
+	"fmt"
 )
 
 var (
@@ -50,7 +52,16 @@ func (c loggingConn) Close() os.Error {
 
 func (c loggingConn) Update(namespace string, selector, update interface{}, options *UpdateOptions) os.Error {
 	err := c.Conn.Update(namespace, selector, update, options)
-	log.Printf("%d.Update(namespace, %+v, %+v, %+v) (%v)", c.id, namespace, selector, update, options, err)
+	var buf bytes.Buffer
+	if options != nil {
+		if options.Upsert {
+			buf.WriteString(", upsert=true")
+		}
+		if options.Multi {
+			buf.WriteString(", multi=true")
+		}
+	}
+	log.Printf("%d.Update(%+v, %+v, %+v%s) (%v)", c.id, namespace, selector, update, buf.String(), err)
 	return err
 }
 
@@ -62,7 +73,13 @@ func (c loggingConn) Insert(namespace string, documents ...interface{}) os.Error
 
 func (c loggingConn) Remove(namespace string, selector interface{}, options *RemoveOptions) os.Error {
 	err := c.Conn.Remove(namespace, selector, options)
-	log.Printf("%d.Remove(%s, %+v, %+v) (%v)", c.id, namespace, selector, options, err)
+	var buf bytes.Buffer
+	if options != nil {
+		if options.Single {
+			buf.WriteString(", single=true")
+		}
+	}
+	log.Printf("%d.Remove(%s, %+v%s) (%v)", c.id, namespace, selector, buf.String(), err)
 	return err
 }
 
@@ -73,7 +90,41 @@ func (c loggingConn) Find(namespace string, query interface{}, options *FindOpti
 		id = newLogId()
 		r = logCursor{r, id}
 	}
-	log.Printf("%d.Find(%s, %+v, %+v) (%d, %v)", c.id, namespace, query, options, id, err)
+	var buf bytes.Buffer
+	if options != nil {
+		if options.Fields != nil {
+			buf.WriteString(", fields:")
+			fmt.Fprintf(&buf, "%+v", options.Fields)
+		}
+		if options.Tailable {
+			buf.WriteString(", tailable:true")
+		}
+		if options.SlaveOk {
+			buf.WriteString(", slaveOK:true")
+		}
+		if options.NoCursorTimeout {
+			buf.WriteString(", noCursorTimeout:true")
+		}
+		if options.AwaitData {
+			buf.WriteString(", awaitData:true")
+		}
+		if options.Exhaust {
+			buf.WriteString(", exhaust:true")
+		}
+		if options.PartialResults {
+			buf.WriteString(", partialResults:true")
+		}
+		if options.Skip != 0 {
+			fmt.Fprintf(&buf, ", skip:%d", options.Skip)
+		}
+		if options.Limit != 0 {
+			fmt.Fprintf(&buf, ", limit:%d", options.Limit)
+		}
+		if options.BatchSize != 0 {
+			fmt.Fprintf(&buf, ", batchSize:%d", options.BatchSize)
+		}
+	}
+	log.Printf("%d.Find(%s, %+v%s) (%d, %v)", c.id, namespace, query, buf.String(), id, err)
 	return r, err
 }
 

@@ -18,7 +18,7 @@ import (
 	"os"
 )
 
-var DefaultLastErrorCmd interface{} = Doc{{"getLastError", 1}}
+var DefaultLastErrorCmd interface{} = map[string]int{"getLastError": 1}
 
 var (
 	upsertOptions      = &UpdateOptions{Upsert: true}
