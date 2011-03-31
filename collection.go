@@ -16,6 +16,8 @@ package mongo
 
 import (
 	"os"
+	"bytes"
+	"strconv"
 )
 
 var DefaultLastErrorCmd interface{} = map[string]int{"getLastError": 1}
@@ -103,4 +105,52 @@ func (c Collection) Find(filter interface{}) *Query {
 		Namespace: c.Namespace,
 		Spec:      QuerySpec{Query: filter},
 	}
+}
+
+// IndexName returns the standard name for an index with keys.
+func IndexName(keys Doc) string {
+	var buf bytes.Buffer
+	for i, key := range keys {
+		if i != 0 {
+			buf.WriteByte('_')
+		}
+		buf.WriteString(key.Key)
+		buf.WriteByte('_')
+		buf.WriteString(strconv.Itoa(key.Value.(int)))
+	}
+	return buf.String()
+}
+
+// IndexOptions specifies options for the collection CreateIndex method.
+type IndexOptions struct {
+	// Custom name for this index. If none specified, then a name will be generated.
+	Name string "name"
+
+	// Should this index guarantee uniqueness?
+	Unique bool "unique/c"
+
+	// Should duplicates be dropped when creating a unique index?
+	DropDups bool "dropDups/c"
+}
+
+// CreateIndex creates an index on keys.
+func (c Collection) CreateIndex(keys Doc, options *IndexOptions) os.Error {
+	index := struct {
+		Keys      Doc    "key"
+		Namespace string "ns"
+		IndexOptions
+	}{
+		Keys:      keys,
+		Namespace: c.Namespace,
+	}
+
+	if options != nil {
+		index.IndexOptions = *options
+	}
+
+	if index.Name == "" {
+		index.Name = IndexName(keys)
+	}
+
+	return c.Db().C("system.indexes").Insert(&index)
 }

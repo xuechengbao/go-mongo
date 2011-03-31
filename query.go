@@ -171,3 +171,18 @@ func (q *Query) One(result interface{}) os.Error {
 func (q *Query) Cursor() (Cursor, os.Error) {
 	return q.Conn.Find(q.Namespace, q.simplifyQuery(), &q.Options)
 }
+
+func (q *Query) Explain(result interface{}) os.Error {
+	spec := q.Spec
+	spec.Explain = true
+	options := q.Options
+	if options.Limit != 0 {
+		options.BatchSize = options.Limit * -1
+	}
+	cursor, err := q.Conn.Find(q.Namespace, &spec, &options)
+	if err != nil {
+		return err
+	}
+	defer cursor.Close()
+	return cursor.Next(result)
+}
