@@ -12,18 +12,19 @@
 <ul>
 <li><a href="#package">Package</a>
 <li><a href="#variables">Variables</a>
-<li><a href="#Count">func Count</a>
 <li><a href="#Decode">func Decode</a>
 <li><a href="#Encode">func Encode</a>
 <li><a href="#FindAndRemove">func FindAndRemove</a>
 <li><a href="#FindAndUpdate">func FindAndUpdate</a>
 <li><a href="#FindOne">func FindOne</a>
+<li><a href="#IndexName">func IndexName</a>
 <li><a href="#SplitNamespace">func SplitNamespace</a>
 <li><a href="#BSONData">type BSONData</a>
 <li><a href="#Code">type Code</a>
 <li><a href="#CodeWithScope">type CodeWithScope</a>
 <li><a href="#Collection">type Collection</a>
             <ul>
+    <li><a href="#Collection.CreateIndex">func (Collection) CreateIndex</a>
     <li><a href="#Collection.Db">func (Collection) Db</a>
     <li><a href="#Collection.Find">func (Collection) Find</a>
     <li><a href="#Collection.Insert">func (Collection) Insert</a>
@@ -70,6 +71,7 @@
             </ul>
 <li><a href="#FindAndModifyOptions">type FindAndModifyOptions</a>
 <li><a href="#FindOptions">type FindOptions</a>
+<li><a href="#IndexOptions">type IndexOptions</a>
 <li><a href="#MinMax">type MinMax</a>
 <li><a href="#MongoError">type MongoError</a>
             <ul>
@@ -96,6 +98,7 @@
     <li><a href="#Query.Count">func (*Query) Count</a>
     <li><a href="#Query.Cursor">func (*Query) Cursor</a>
     <li><a href="#Query.Exhaust">func (*Query) Exhaust</a>
+    <li><a href="#Query.Explain">func (*Query) Explain</a>
     <li><a href="#Query.Fields">func (*Query) Fields</a>
     <li><a href="#Query.Limit">func (*Query) Limit</a>
     <li><a href="#Query.One">func (*Query) One</a>
@@ -108,12 +111,6 @@
 <li><a href="#QuerySpec">type QuerySpec</a>
 <li><a href="#Regexp">type Regexp</a>
 <li><a href="#RemoveOptions">type RemoveOptions</a>
-<li><a href="#SafeConn">type SafeConn</a>
-            <ul>
-    <li><a href="#SafeConn.Insert">func (SafeConn) Insert</a>
-    <li><a href="#SafeConn.Remove">func (SafeConn) Remove</a>
-    <li><a href="#SafeConn.Update">func (SafeConn) Update</a>
-            </ul>
 <li><a href="#Symbol">type Symbol</a>
 <li><a href="#Timestamp">type Timestamp</a>
 <li><a href="#UpdateOptions">type UpdateOptions</a>
@@ -141,7 +138,7 @@ methods for working with Conn objects.
 <h2 id="variables">Variables</h2>
 
 <pre>
-var DefaultLastErrorCmd interface{} = Doc{{&#34;getLastError&#34;, 1}}
+var DefaultLastErrorCmd interface{} = map[string]int{&#34;getLastError&#34;: 1}
 </pre>
 
 <pre>
@@ -269,7 +266,22 @@ operator update. FindAndUpdate is a wrapper around the MongoDB findAndModify
 command.
 </p>
 
-<h2 id="SplitNamespace">func <a href="https://github.com/garyburd/go-mongo/blob/master/database.go#L29">SplitNamespace</a></h2>
+<h2 id="FindOne">func <a href="https://github.com/garyburd/go-mongo/blob/master/helpers.go#L24">FindOne</a></h2>
+<p><code>func FindOne(conn Conn, namespace string, query interface{}, options *FindOptions, result interface{}) os.Error</code></p>
+<p>
+FindOne returns a single result for a query.
+</p>
+<p>
+Deprecated. Use Collection{conn, namespace}.Find(query).One(result)
+</p>
+
+<h2 id="IndexName">func <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L111">IndexName</a></h2>
+<p><code>func IndexName(keys Doc) string</code></p>
+<p>
+IndexName returns the standard name for an index with keys.
+</p>
+
+<h2 id="SplitNamespace">func <a href="https://github.com/garyburd/go-mongo/blob/master/database.go#L28">SplitNamespace</a></h2>
 <p><code>func SplitNamespace(s string) (string, string)</code></p>
 <p>
 SplitNamespace splits a namespace into database name and collection name
@@ -336,56 +348,62 @@ Collection represents a MongoDB collection.
 
 
 
-    <h3 id="Collection.Db">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L48">Db</a></h3>
+    <h3 id="Collection.CreateIndex">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L137">CreateIndex</a></h3>
+    <p><code>func (c Collection) CreateIndex(keys Doc, options *IndexOptions) os.Error</code></p>
+    <p>
+CreateIndex creates an index on keys.
+</p>
+
+    <h3 id="Collection.Db">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L50">Db</a></h3>
     <p><code>func (c Collection) Db() Database</code></p>
     <p>
 Db returns the database for this collection.
 </p>
 
-    <h3 id="Collection.Find">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L100">Find</a></h3>
+    <h3 id="Collection.Find">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L102">Find</a></h3>
     <p><code>func (c Collection) Find(filter interface{}) *Query</code></p>
     <p>
 Find returns a query object for the given filter.
 </p>
 
-    <h3 id="Collection.Insert">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L68">Insert</a></h3>
+    <h3 id="Collection.Insert">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L70">Insert</a></h3>
     <p><code>func (c Collection) Insert(documents ...interface{}) os.Error</code></p>
     <p>
 Insert adds document to the collection.
 </p>
 
-    <h3 id="Collection.Name">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L42">Name</a></h3>
+    <h3 id="Collection.Name">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L44">Name</a></h3>
     <p><code>func (c Collection) Name() string</code></p>
     <p>
 Name returns the collection&#39;s name.
 </p>
 
-    <h3 id="Collection.Remove">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L95">Remove</a></h3>
+    <h3 id="Collection.Remove">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L97">Remove</a></h3>
     <p><code>func (c Collection) Remove(selector interface{}) os.Error</code></p>
     <p>
 Remove removes all documents found by selector.
 </p>
 
-    <h3 id="Collection.RemoveFirst">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L90">RemoveFirst</a></h3>
+    <h3 id="Collection.RemoveFirst">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L92">RemoveFirst</a></h3>
     <p><code>func (c Collection) RemoveFirst(selector interface{}) os.Error</code></p>
     <p>
 RemoveFirst removes the first document found by selector.
 </p>
 
-    <h3 id="Collection.Update">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L74">Update</a></h3>
+    <h3 id="Collection.Update">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L76">Update</a></h3>
     <p><code>func (c Collection) Update(selector, update interface{}) os.Error</code></p>
     <p>
 Update updates the first document in the collection found by selector with
 update.
 </p>
 
-    <h3 id="Collection.UpdateAll">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L85">UpdateAll</a></h3>
+    <h3 id="Collection.UpdateAll">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L87">UpdateAll</a></h3>
     <p><code>func (c Collection) UpdateAll(selector interface{}, update interface{}) os.Error</code></p>
     <p>
 UpdateAll updates all documents matching selector with update.
 </p>
 
-    <h3 id="Collection.Upsert">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L80">Upsert</a></h3>
+    <h3 id="Collection.Upsert">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L82">Upsert</a></h3>
     <p><code>func (c Collection) Upsert(selector interface{}, update interface{}) os.Error</code></p>
     <p>
 Upsert updates the first document found by selector with update. If no
@@ -407,7 +425,7 @@ server.
 
 
 
-    <h3 id="CommandResponse.Error">func (CommandResponse) <a href="https://github.com/garyburd/go-mongo/blob/master/database.go#L55">Error</a></h3>
+    <h3 id="CommandResponse.Error">func (CommandResponse) <a href="https://github.com/garyburd/go-mongo/blob/master/database.go#L54">Error</a></h3>
     <p><code>func (s CommandResponse) Error() os.Error</code></p>
     <p>
 Error returns the error from the response or nil.
@@ -458,7 +476,7 @@ the collection.
 Dial connects to server at addr.
 </p>
 
-    <h3 id="NewLoggingConn">func <a href="https://github.com/garyburd/go-mongo/blob/master/log.go#L36">NewLoggingConn</a></h3>
+    <h3 id="NewLoggingConn">func <a href="https://github.com/garyburd/go-mongo/blob/master/log.go#L38">NewLoggingConn</a></h3>
     <p><code>func NewLoggingConn(conn Conn) Conn</code></p>
     <p>
 NewLoggingConn returns logging wrapper around a connection.
@@ -531,21 +549,21 @@ Database represents a MongoDb database.
 
 
 
-    <h3 id="Database.C">func (Database) <a href="https://github.com/garyburd/go-mongo/blob/master/database.go#L77">C</a></h3>
+    <h3 id="Database.C">func (Database) <a href="https://github.com/garyburd/go-mongo/blob/master/database.go#L76">C</a></h3>
     <p><code>func (db Database) C(name string) Collection</code></p>
     <p>
 C returns the collection with name. This is a lightweight operation. The
 method does not check to see if the collection exists in the database.
 </p>
 
-    <h3 id="Database.LastError">func (Database) <a href="https://github.com/garyburd/go-mongo/blob/master/database.go#L115">LastError</a></h3>
+    <h3 id="Database.LastError">func (Database) <a href="https://github.com/garyburd/go-mongo/blob/master/database.go#L114">LastError</a></h3>
     <p><code>func (db Database) LastError(cmd interface{}) os.Error</code></p>
     <p>
 LastError returns the last error for the database using cmd. If cmd is nil,
 then the command {&#34;getLasetError&#34;: 1} is used to get the error.
 </p>
 
-    <h3 id="Database.Run">func (Database) <a href="https://github.com/garyburd/go-mongo/blob/master/database.go#L86">Run</a></h3>
+    <h3 id="Database.Run">func (Database) <a href="https://github.com/garyburd/go-mongo/blob/master/database.go#L85">Run</a></h3>
     <p><code>func (db Database) Run(cmd interface{}, result interface{}) os.Error</code></p>
     <p>
 Run runs the command cmd on the database.
@@ -717,6 +735,26 @@ FindOptions specifies options for the Conn.Find method.
 
 
 
+<h2 id="IndexOptions">type IndexOptions</h2>
+<p>
+IndexOptions specifies options for the collection CreateIndex method.
+</p>
+
+<pre>type IndexOptions struct {
+ // Custom name for this index. If none specified, then a name will be generated.
+ Name string &#34;name&#34;
+
+ // Should this index guarantee uniqueness?
+ Unique bool &#34;unique/c&#34;
+
+ // Should duplicates be dropped when creating a unique index?
+ DropDups bool &#34;dropDups/c&#34;
+}</pre>
+
+
+
+
+
 <h2 id="MinMax">type MinMax</h2>
 <p>
 MinMax represents either a minimum or maximum BSON value.
@@ -751,7 +789,7 @@ MongoError represents an error for the connection mutation operations.
 
 
 
-    <h3 id="MongoError.String">func (*MongoError) <a href="https://github.com/garyburd/go-mongo/blob/master/database.go#L43">String</a></h3>
+    <h3 id="MongoError.String">func (*MongoError) <a href="https://github.com/garyburd/go-mongo/blob/master/database.go#L42">String</a></h3>
     <p><code>func (e *MongoError) String() string</code></p>
     
 
@@ -911,6 +949,9 @@ changes to the query object are ignored by the cursor.
     <h3 id="Query.Exhaust">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L103">Exhaust</a></h3>
     <p><code>func (q *Query) Exhaust(exhaust bool) *Query</code></p>
     
+    <h3 id="Query.Explain">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L175">Explain</a></h3>
+    <p><code>func (q *Query) Explain(result interface{}) os.Error</code></p>
+    
     <h3 id="Query.Fields">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L88">Fields</a></h3>
     <p><code>func (q *Query) Fields(fields interface{}) *Query</code></p>
     <p>
@@ -1023,39 +1064,6 @@ RemoveOptions specifies options for the Conn.Remove method.
  // collection. Otherwise all matching documents are removed.
  Single bool
 }</pre>
-
-
-
-
-
-<h2 id="SafeConn">type SafeConn</h2>
-<p>
-SafeConn wraps a connection with safe mode handling. The wrapper fetches the
-last error from the server after each call to a mutating operation (insert,
-update, remove) and returns the error if any as an os.Error.
-</p>
-
-<pre>type SafeConn struct {
- // The connecion to wrap.
- Conn
-
- // The command document used to fetch the last error. If cmd is nil, then
- // the command {&#34;getLastError&#34;: 1} is used as the command.
- Cmd interface{}
-}</pre>
-
-
-
-
-    <h3 id="SafeConn.Insert">func (SafeConn) <a href="https://github.com/garyburd/go-mongo/blob/master/helpers.go#L105">Insert</a></h3>
-    <p><code>func (c SafeConn) Insert(namespace string, documents ...interface{}) os.Error</code></p>
-    
-    <h3 id="SafeConn.Remove">func (SafeConn) <a href="https://github.com/garyburd/go-mongo/blob/master/helpers.go#L109">Remove</a></h3>
-    <p><code>func (c SafeConn) Remove(namespace string, selector interface{}, options *RemoveOptions) os.Error</code></p>
-    
-    <h3 id="SafeConn.Update">func (SafeConn) <a href="https://github.com/garyburd/go-mongo/blob/master/helpers.go#L101">Update</a></h3>
-    <p><code>func (c SafeConn) Update(namespace string, selector, update interface{}, options *UpdateOptions) os.Error</code></p>
-    
 
 <h2 id="Symbol">type Symbol</h2>
 <p>
