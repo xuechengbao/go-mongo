@@ -138,7 +138,7 @@ func (db Database) LastError(cmd interface{}) os.Error {
 
 // DBRef is a reference to a document in a database. Use the Database
 // Dereference method to get the referenced document. See
-// http://www.mongodb.org/display/DOCS/Database+ReferencesA for more
+// http://www.mongodb.org/display/DOCS/Database+References for more
 // information on DBRefs.
 type DBRef struct {
 	// The target document's id.

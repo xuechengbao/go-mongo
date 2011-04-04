@@ -118,6 +118,9 @@ func MinObjectIdForTime(t int64) ObjectId {
 
 // CreationTime extracts the time the object id was created in seconds since the epoch.
 func (id ObjectId) CreationTime() int64 {
+	if len(id) != 12 {
+		return 0
+	}
 	return int64(id[0])<<24 + int64(id[1])<<16 + int64(id[2])<<8 + int64(id[3])
 }
 

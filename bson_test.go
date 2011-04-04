@@ -351,4 +351,8 @@ func TestObjectId(t *testing.T) {
 	if id2 != id {
 		t.Errorf("%q != %q", id2, id)
 	}
+	t2 := ObjectId("").CreationTime()
+	if t2 != 0 {
+		t.Error("creation time for invalid id = %d, want 0", t1)
+	}
 }
