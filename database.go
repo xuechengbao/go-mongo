@@ -135,3 +135,26 @@ func (db Database) LastError(cmd interface{}) os.Error {
 	}
 	return nil
 }
+
+// DBRef is a reference to a document in a database. Use the Database
+// Dereference method to get the referenced document. See
+// http://www.mongodb.org/display/DOCS/Database+ReferencesA for more
+// information on DBRefs.
+type DBRef struct {
+	// The target document's id.
+	Id ObjectId "$id"
+
+	// The target document's collection.
+	Collection string "$ref"
+
+	// The target document's database (optional).
+	Database string "$db/c"
+}
+
+// Deference fetches the document specified by a database reference.
+func (db Database) Dereference(ref DBRef, slaveOk bool, result interface{}) os.Error {
+	if ref.Database != "" {
+		db.Name = ref.Database
+	}
+	return db.C(ref.Collection).Find(Doc{{"_id", ref.Id}}).SlaveOk(slaveOk).One(&result)
+}

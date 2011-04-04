@@ -164,10 +164,11 @@ func TestStuff(t *testing.T) {
 		t.Fatal("insert", err)
 	}
 
+	ref := DBRef{Id: id, Collection: c.Name()}
 	var m map[string]interface{}
-	err = c.Find(map[string]interface{}{"_id": id}).One(&m)
+	err = db.Dereference(ref, false, &m)
 	if err != nil {
-		t.Fatal("findone", err)
+		t.Fatal("dereference", err)
 	}
 
 	err = c.Update(
