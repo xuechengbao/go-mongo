@@ -56,7 +56,7 @@ func Dial(addr string) (Conn, os.Error) {
 }
 
 func (c *connection) connect() os.Error {
-	conn, err := net.Dial("tcp", "", c.addr)
+	conn, err := net.Dial("tcp", c.addr)
 	if err != nil {
 		return err
 	}
