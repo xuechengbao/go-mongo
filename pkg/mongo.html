@@ -14,10 +14,9 @@
 <li><a href="#variables">Variables</a>
 <li><a href="#Decode">func Decode</a>
 <li><a href="#Encode">func Encode</a>
-<li><a href="#FindAndRemove">func FindAndRemove</a>
-<li><a href="#FindAndUpdate">func FindAndUpdate</a>
 <li><a href="#IndexName">func IndexName</a>
 <li><a href="#SplitNamespace">func SplitNamespace</a>
+<li><a href="#A">type A</a>
 <li><a href="#BSONData">type BSONData</a>
 <li><a href="#Code">type Code</a>
 <li><a href="#CodeWithScope">type CodeWithScope</a>
@@ -26,6 +25,8 @@
     <li><a href="#Collection.CreateIndex">func (Collection) CreateIndex</a>
     <li><a href="#Collection.Db">func (Collection) Db</a>
     <li><a href="#Collection.Find">func (Collection) Find</a>
+    <li><a href="#Collection.FindAndRemove">func (Collection) FindAndRemove</a>
+    <li><a href="#Collection.FindAndUpdate">func (Collection) FindAndUpdate</a>
     <li><a href="#Collection.Insert">func (Collection) Insert</a>
     <li><a href="#Collection.Name">func (Collection) Name</a>
     <li><a href="#Collection.Remove">func (Collection) Remove</a>
@@ -44,6 +45,10 @@
     <li><a href="#NewLoggingConn">func NewLoggingConn</a>
         </ul>
 <li><a href="#Cursor">type Cursor</a>
+<li><a href="#D">type D</a>
+            <ul>
+    <li><a href="#D.Append">func (*D) Append</a>
+            </ul>
 <li><a href="#DBRef">type DBRef</a>
 <li><a href="#Database">type Database</a>
             <ul>
@@ -61,10 +66,6 @@
             <ul>
     <li><a href="#DecodeTypeError.String">func (*DecodeTypeError) String</a>
             </ul>
-<li><a href="#Doc">type Doc</a>
-            <ul>
-    <li><a href="#Doc.Append">func (*Doc) Append</a>
-            </ul>
 <li><a href="#DocItem">type DocItem</a>
 <li><a href="#EncodeTypeError">type EncodeTypeError</a>
             <ul>
@@ -73,6 +74,7 @@
 <li><a href="#FindAndModifyOptions">type FindAndModifyOptions</a>
 <li><a href="#FindOptions">type FindOptions</a>
 <li><a href="#IndexOptions">type IndexOptions</a>
+<li><a href="#M">type M</a>
 <li><a href="#MinMax">type MinMax</a>
 <li><a href="#MongoError">type MongoError</a>
             <ul>
@@ -188,7 +190,7 @@ To decode a BSON value into a nil interface value, the first type listed in
 the right hand column of the table above is used.
 </p>
 
-<h2 id="Encode">func <a href="https://github.com/garyburd/go-mongo/blob/master/bson_encode.go#L99">Encode</a></h2>
+<h2 id="Encode">func <a href="https://github.com/garyburd/go-mongo/blob/master/bson_encode.go#L100">Encode</a></h2>
 <p><code>func Encode(buf []byte, doc interface{}) (result []byte, err os.Error)</code></p>
 <p>
 Encode appends the BSON encoding of doc to buf and returns the new slice.
@@ -237,7 +239,7 @@ string              -&gt; String
 mongo.Code          -&gt; Javascript code
 mongo.CodeWithScope -&gt; Javascript code with scope
 mongo.DateTime      -&gt; UTC Datetime
-mongo.Doc           -&gt; Document. Use when element order is important.
+mongo.D             -&gt; Document. Use when element order is important.
 mongo.MinMax        -&gt; Minimum / Maximum value
 mongo.ObjectId      -&gt; ObjectId
 mongo.Regexp        -&gt; Regular expression
@@ -252,23 +254,8 @@ BSON cannot represent cyclic data structure and Encode does not handle them.
 Passing cyclic structures to Encode will result in an infinite recursion.
 </p>
 
-<h2 id="FindAndRemove">func <a href="https://github.com/garyburd/go-mongo/blob/master/helpers.go#L158">FindAndRemove</a></h2>
-<p><code>func FindAndRemove(conn Conn, namespace string, selector interface{}, options *FindAndModifyOptions, result interface{}) os.Error</code></p>
-<p>
-FindAndRemove removes and returns a document specified by selector.
-FindAndRemove is a wrapper around the MongoDB findAndModify command.
-</p>
-
-<h2 id="FindAndUpdate">func <a href="https://github.com/garyburd/go-mongo/blob/master/helpers.go#L143">FindAndUpdate</a></h2>
-<p><code>func FindAndUpdate(conn Conn, namespace string, selector, update interface{}, options *FindAndModifyOptions, result interface{}) os.Error</code></p>
-<p>
-FindAndUpdate updates and returns a document specified by selector with
-operator update. FindAndUpdate is a wrapper around the MongoDB findAndModify
-command.
-</p>
-
-<h2 id="IndexName">func <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L111">IndexName</a></h2>
-<p><code>func IndexName(keys Doc) string</code></p>
+<h2 id="IndexName">func <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L114">IndexName</a></h2>
+<p><code>func IndexName(keys D) string</code></p>
 <p>
 IndexName returns the standard name for an index with keys.
 </p>
@@ -279,6 +266,18 @@ IndexName returns the standard name for an index with keys.
 SplitNamespace splits a namespace into database name and collection name
 components.
 </p>
+
+
+<h2 id="A">type A</h2>
+<p>
+A is a shortcut for writing []interface{} in BSON literal expressions. The
+type A is encoded the same as the type []interface{}.
+</p>
+
+<pre>type A []interface{}</pre>
+
+
+
 
 
 <h2 id="BSONData">type BSONData</h2>
@@ -340,8 +339,8 @@ Collection represents a MongoDB collection.
 
 
 
-    <h3 id="Collection.CreateIndex">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L137">CreateIndex</a></h3>
-    <p><code>func (c Collection) CreateIndex(keys Doc, options *IndexOptions) os.Error</code></p>
+    <h3 id="Collection.CreateIndex">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L140">CreateIndex</a></h3>
+    <p><code>func (c Collection) CreateIndex(keys D, options *IndexOptions) os.Error</code></p>
     <p>
 CreateIndex creates an index on keys.
 </p>
@@ -356,6 +355,21 @@ Db returns the database for this collection.
     <p><code>func (c Collection) Find(filter interface{}) *Query</code></p>
     <p>
 Find returns a query object for the given filter.
+</p>
+
+    <h3 id="Collection.FindAndRemove">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L205">FindAndRemove</a></h3>
+    <p><code>func (c Collection) FindAndRemove(selector interface{}, options *FindAndModifyOptions, result interface{}) os.Error</code></p>
+    <p>
+FindAndRemove removes and returns a document specified by selector.
+FindAndRemove is a wrapper around the MongoDB findAndModify command.
+</p>
+
+    <h3 id="Collection.FindAndUpdate">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L185">FindAndUpdate</a></h3>
+    <p><code>func (c Collection) FindAndUpdate(selector, update interface{}, options *FindAndModifyOptions, result interface{}) os.Error</code></p>
+    <p>
+FindAndUpdate updates and returns a document specified by selector with
+operator update. FindAndUpdate is a wrapper around the MongoDB findAndModify
+command.
 </p>
 
     <h3 id="Collection.Insert">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L70">Insert</a></h3>
@@ -462,7 +476,7 @@ the collection.
 
 
 
-    <h3 id="Dial">func <a href="https://github.com/garyburd/go-mongo/blob/master/connection.go#L47">Dial</a></h3>
+    <h3 id="Dial">func <a href="https://github.com/garyburd/go-mongo/blob/master/connection.go#L48">Dial</a></h3>
     <p><code>func Dial(addr string) (Conn, os.Error)</code></p>
     <p>
 Dial connects to server at addr.
@@ -527,11 +541,30 @@ tailable cursors.
 
 
 
+<h2 id="D">type D</h2>
+<p>
+D represents an ordered BSON document. Use D for commands, index
+specifications and other situations where the order of the key-value pairs
+in a document is important.
+</p>
+
+<pre>type D []DocItem</pre>
+
+
+
+
+    <h3 id="D.Append">func (*D) <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L170">Append</a></h3>
+    <p><code>func (d *D) Append(name string, value interface{})</code></p>
+    <p>
+Append adds an item to the document..
+</p>
+
+
 <h2 id="DBRef">type DBRef</h2>
 <p>
 DBRef is a reference to a document in a database. Use the Database
 Dereference method to get the referenced document. See
-<a href="http://www.mongodb.org/display/DOCS/Database+ReferencesA">http://www.mongodb.org/display/DOCS/Database+ReferencesA</a> for more
+<a href="http://www.mongodb.org/display/DOCS/Database+References">http://www.mongodb.org/display/DOCS/Database+References</a> for more
 information on DBRefs.
 </p>
 
@@ -637,24 +670,6 @@ the input.
     <p><code>func (e *DecodeTypeError) String() string</code></p>
     
 
-<h2 id="Doc">type Doc</h2>
-<p>
-Doc represents a BSON document. Use Doc when the order of the key-value
-pairs is important.
-</p>
-
-<pre>type Doc []DocItem</pre>
-
-
-
-
-    <h3 id="Doc.Append">func (*Doc) <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L164">Append</a></h3>
-    <p><code>func (d *Doc) Append(name string, value interface{})</code></p>
-    <p>
-Append adds an item to doc.
-</p>
-
-
 <h2 id="DocItem">type DocItem</h2>
 
 <pre>type DocItem struct {
@@ -678,28 +693,29 @@ EncodeTypeError is the error indicating that Encode could not encode an input ty
 
 
 
-    <h3 id="EncodeTypeError.String">func (*EncodeTypeError) <a href="https://github.com/garyburd/go-mongo/blob/master/bson_encode.go#L36">String</a></h3>
+    <h3 id="EncodeTypeError.String">func (*EncodeTypeError) <a href="https://github.com/garyburd/go-mongo/blob/master/bson_encode.go#L37">String</a></h3>
     <p><code>func (e *EncodeTypeError) String() string</code></p>
     
 
 <h2 id="FindAndModifyOptions">type FindAndModifyOptions</h2>
 <p>
-FindAndModifyOptions specifies options for the FindAndUpdate and FindAndRemove functions.
+FindAndModifyOptions specifies options for the FindAndUpdate and FindAndRemove methods.
 </p>
 
 <pre>type FindAndModifyOptions struct {
- // Set to true if you want to return the modified object rather than the original. Ignored for remove.
- New bool
+ // Set to true if you want to return the modified object rather than the
+ // original. Ignored for remove.
+ New bool &#34;new/c&#34;
 
  // Specify subset of fields to return.
- Fields interface{}
+ Fields interface{} &#34;fields&#34;
 
  // Create object if it doesn&#39;t exist. Ignored for remove.
- Upsert bool
+ Upsert bool &#34;upsert/c&#34;
 
  // If multiple docs match, choose the first one in the specified sort order
- // as the object to update.
- Sort Doc
+ // as the object to update. 
+ Sort interface{} &#34;sort&#34;
 }</pre>
 
 
@@ -776,6 +792,19 @@ IndexOptions specifies options for the collection CreateIndex method.
 
 
 
+<h2 id="M">type M</h2>
+<p>
+M is a shortcut for writing map[string]interface{} in BSON literal
+expressions. The type M is encoded the same as the type
+map[string]interface{}.
+</p>
+
+<pre>type M map[string]interface{}</pre>
+
+
+
+
+
 <h2 id="MinMax">type MinMax</h2>
 <p>
 MinMax represents either a minimum or maximum BSON value.
@@ -823,21 +852,21 @@ ObjectId represents a BSON object identifier.
 
 
 
-    <h3 id="MaxObjectIdForTime">func <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L109">MaxObjectIdForTime</a></h3>
+    <h3 id="MaxObjectIdForTime">func <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L111">MaxObjectIdForTime</a></h3>
     <p><code>func MaxObjectIdForTime(t int64) ObjectId</code></p>
     <p>
 MaxObjectIdForTime returns the maximum object id for time t in seconds from
 the epoch.
 </p>
 
-    <h3 id="MinObjectIdForTime">func <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L115">MinObjectIdForTime</a></h3>
+    <h3 id="MinObjectIdForTime">func <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L117">MinObjectIdForTime</a></h3>
     <p><code>func MinObjectIdForTime(t int64) ObjectId</code></p>
     <p>
 MinObjectIdForTime returns the minimum object id for time t in seconds from
 the epoch.
 </p>
 
-    <h3 id="NewObjectId">func <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L90">NewObjectId</a></h3>
+    <h3 id="NewObjectId">func <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L92">NewObjectId</a></h3>
     <p><code>func NewObjectId() ObjectId</code></p>
     <p>
 NewObjectId returns a new object id. This function uses the following format
@@ -851,7 +880,7 @@ for object ids:
        is simpler than the format used by other drivers.
 </pre>
 
-    <h3 id="NewObjectIdHex">func <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L96">NewObjectIdHex</a></h3>
+    <h3 id="NewObjectIdHex">func <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L98">NewObjectIdHex</a></h3>
     <p><code>func NewObjectIdHex(hexString string) (ObjectId, os.Error)</code></p>
     <p>
 NewObjectIdString returns an object id initialized from the hexadecimal
@@ -859,13 +888,13 @@ encoding of the object id.
 </p>
 
 
-    <h3 id="ObjectId.CreationTime">func (ObjectId) <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L120">CreationTime</a></h3>
+    <h3 id="ObjectId.CreationTime">func (ObjectId) <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L122">CreationTime</a></h3>
     <p><code>func (id ObjectId) CreationTime() int64</code></p>
     <p>
 CreationTime extracts the time the object id was created in seconds since the epoch.
 </p>
 
-    <h3 id="ObjectId.String">func (ObjectId) <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L60">String</a></h3>
+    <h3 id="ObjectId.String">func (ObjectId) <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L62">String</a></h3>
     <p><code>func (id ObjectId) String() string</code></p>
     
 
@@ -1004,7 +1033,7 @@ Skip specifies the number of documents to skip in the result set.
     <p><code>func (q *Query) SlaveOk(slaveOk bool) *Query</code></p>
     
     <h3 id="Query.Sort">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L63">Sort</a></h3>
-    <p><code>func (q *Query) Sort(sort Doc) *Query</code></p>
+    <p><code>func (q *Query) Sort(sort interface{}) *Query</code></p>
     <p>
 Sort specifies the sort order for the result. The order is specified by
 (key, direction) pairs. The direction is 1 for ascending order and -1 for
@@ -1026,7 +1055,7 @@ QuerySpec is a helper for specifying complex queries.
 
  // Sort order specified by (key, direction) pairs. The direction is 1 for
  // ascending order and -1 for descending order.
- Sort Doc &#34;$orderby&#34;
+ Sort interface{} &#34;$orderby&#34;
 
  // If set to true, then the query returns an explain plan record the query.
  // See http://www.mongodb.org/display/DOCS/Optimization#Optimization-Explain
@@ -1034,7 +1063,7 @@ QuerySpec is a helper for specifying complex queries.
 
  // Index hint specified by (key, direction) pairs. 
  // See http://www.mongodb.org/display/DOCS/Optimization#Optimization-Hint
- Hint Doc &#34;$hint&#34;
+ Hint interface{} &#34;$hint&#34;
 
  // Snapshot mode assures that objects which update during the lifetime of a
  // query are returned once and only once.
@@ -1085,6 +1114,9 @@ RemoveOptions specifies options for the Conn.Remove method.
  // collection. Otherwise all matching documents are removed.
  Single bool
 }</pre>
+
+
+
 
 
 <h2 id="Symbol">type Symbol</h2>
