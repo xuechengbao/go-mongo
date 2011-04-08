@@ -14,14 +14,12 @@ var countTests = []struct {
 	{limit: 5, count: 5},
 	{skip: 5, count: 5},
 	{skip: 100, count: 0},
-	{query: Doc{{"x", 1}}, count: 1},
+	{query: D{{"x", 1}}, count: 1},
 }
 
 func TestCount(t *testing.T) {
-	db := dialAndDrop(t, "go-mongo-test")
-	defer db.Conn.Close()
-
-	c := db.C("test")
+	c := dialAndDrop(t, "go-mongo-test", "test")
+	defer c.Conn.Close()
 
 	for i := 0; i < 10; i++ {
 		err := c.Insert(map[string]int{"x": i})
@@ -42,9 +40,8 @@ func TestCount(t *testing.T) {
 }
 
 func TestQuery(t *testing.T) {
-	db := dialAndDrop(t, "go-mongo-test")
-	defer db.Conn.Close()
-	c := db.C("test")
+	c := dialAndDrop(t, "go-mongo-test", "test")
+	defer c.Conn.Close()
 
 	for i := 0; i < 10; i++ {
 		err := c.Insert(map[string]int{"x": i})
@@ -53,8 +50,8 @@ func TestQuery(t *testing.T) {
 		}
 	}
 
-	var m map[string]interface{}
-	err := c.Find(Doc{}).Sort(Doc{{"x", -1}}).One(&m)
+	var m M
+	err := c.Find(nil).Sort(D{{"x", -1}}).One(&m)
 	if err != nil {
 		t.Fatal("findone", err)
 	}

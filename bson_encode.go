@@ -23,6 +23,7 @@ import (
 )
 
 var (
+	typeD        = reflect.Typeof(D{})
 	typeDoc      = reflect.Typeof(Doc{})
 	typeBSONData = reflect.Typeof(BSONData{})
 	idKey        = reflect.NewValue("_id")
@@ -85,7 +86,7 @@ type encodeState struct {
 //      mongo.Code          -> Javascript code
 //      mongo.CodeWithScope -> Javascript code with scope
 //      mongo.DateTime      -> UTC Datetime
-//      mongo.Doc           -> Document. Use when element order is important.
+//      mongo.D             -> Document. Use when element order is important.
 //      mongo.MinMax        -> Minimum / Maximum value
 //      mongo.ObjectId      -> ObjectId
 //      mongo.Regexp        -> Regular expression
@@ -113,6 +114,8 @@ func Encode(buf []byte, doc interface{}) (result []byte, err os.Error) {
 
 	e := encodeState{buffer: buf}
 	switch v.Type() {
+	case typeD:
+		e.writeD(v.Interface().(D))
 	case typeDoc:
 		e.writeDoc(v.Interface().(Doc))
 	case typeBSONData:
@@ -185,6 +188,15 @@ func (e *encodeState) writeMap(v *reflect.MapValue, topLevel bool) {
 		if !skipId || sk != "_id" {
 			e.encodeValue(sk, defaultFieldInfo, v.Elem(k))
 		}
+	}
+	e.WriteByte(0)
+	e.endDoc(offset)
+}
+
+func (e *encodeState) writeD(v D) {
+	offset := e.beginDoc()
+	for _, kv := range v {
+		e.encodeValue(kv.Key, defaultFieldInfo, reflect.NewValue(kv.Value))
 	}
 	e.WriteByte(0)
 	e.endDoc(offset)
@@ -360,6 +372,15 @@ func encodeMap(e *encodeState, name string, fi *fieldInfo, value reflect.Value) 
 	e.writeMap(v, false)
 }
 
+func encodeD(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
+	v := value.Interface().(D)
+	if v == nil {
+		return
+	}
+	e.writeKindName(kindDocument, name)
+	e.writeD(v)
+}
+
 func encodeDoc(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
 	v := value.Interface().(Doc)
 	if v == nil {
@@ -449,6 +470,7 @@ func init() {
 	}
 	typeEncoder = map[reflect.Type]encoderFunc{
 		typeDoc:      encodeDoc,
+		typeD:        encodeD,
 		typeBSONData: encodeBSONData,
 		reflect.Typeof(Code("")): func(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
 			encodeString(e, kindCode, name, fi, value)

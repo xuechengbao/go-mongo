@@ -156,5 +156,5 @@ func (db Database) Dereference(ref DBRef, slaveOk bool, result interface{}) os.E
 	if ref.Database != "" {
 		db.Name = ref.Database
 	}
-	return db.C(ref.Collection).Find(Doc{{"_id", ref.Id}}).SlaveOk(slaveOk).One(&result)
+	return db.C(ref.Collection).Find(M{"_id": ref.Id}).SlaveOk(slaveOk).One(result)
 }

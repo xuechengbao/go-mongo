@@ -33,7 +33,7 @@ type QuerySpec struct {
 
 	// Sort order specified by (key, direction) pairs. The direction is 1 for
 	// ascending order and -1 for descending order.
-	Sort Doc "$orderby"
+	Sort interface{} "$orderby"
 
 	// If set to true, then the query returns an explain plan record the query.
 	// See http://www.mongodb.org/display/DOCS/Optimization#Optimization-Explain
@@ -41,7 +41,7 @@ type QuerySpec struct {
 
 	// Index hint specified by (key, direction) pairs. 
 	// See http://www.mongodb.org/display/DOCS/Optimization#Optimization-Hint
-	Hint Doc "$hint"
+	Hint interface{} "$hint"
 
 	// Snapshot mode assures that objects which update during the lifetime of a
 	// query are returned once and only once.
@@ -60,7 +60,7 @@ type QuerySpec struct {
 // Sort specifies the sort order for the result. The order is specified by
 // (key, direction) pairs. The direction is 1 for ascending order and -1 for
 // descending order.
-func (q *Query) Sort(sort Doc) *Query {
+func (q *Query) Sort(sort interface{}) *Query {
 	q.Spec.Sort = sort
 	return q
 }
@@ -114,7 +114,7 @@ func (q *Query) Tailable(tailable bool) *Query {
 // skip are considered in the count.
 func (q *Query) Count() (int64, os.Error) {
 	dbname, cname := SplitNamespace(q.Namespace)
-	cmd := Doc{{"count", cname}}
+	cmd := D{{"count", cname}}
 	if q.Spec.Query != nil {
 		cmd.Append("query", &q.Spec.Query)
 	}

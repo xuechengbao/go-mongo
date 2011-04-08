@@ -26,6 +26,8 @@ import (
 	"os"
 )
 
+var emptyDoc = M{}
+
 // DateTime represents a BSON datetime. The value is in milliseconds since the
 // Unix epoch.
 type DateTime int64
@@ -159,14 +161,24 @@ type DocItem struct {
 	Value interface{}
 }
 
-// Doc represents a BSON document. Use Doc when the order of the key-value
-// pairs is important.
-type Doc []DocItem
+// D represents an ordered BSON document. Use D for commands, index
+// specifications and other situations where the order of the key-value pairs
+// in a document is important.
+type D []DocItem
 
-// Append adds an item to doc.
-func (d *Doc) Append(name string, value interface{}) {
+// Append adds an item to the document..
+func (d *D) Append(name string, value interface{}) {
 	*d = append(*d, DocItem{name, value})
 }
+
+// M is a shortcut for writing map[string]interface{} in BSON literal
+// expressions. The type M is encoded the same as the type
+// map[string]interface{}.
+type M map[string]interface{}
+
+// A is a shortcut for writing []interface{} in BSON literal expressions. The
+// type A is encoded the same as the type []interface{}.
+type A []interface{}
 
 // MinMax represents either a minimum or maximum BSON value.
 type MinMax int

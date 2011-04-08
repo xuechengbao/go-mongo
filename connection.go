@@ -34,6 +34,7 @@ const (
 	queryPartialResults  = 1 << 7
 )
 
+
 type connection struct {
 	conn      net.Conn
 	addr      string
@@ -109,8 +110,10 @@ func (c *connection) send(msg []byte) os.Error {
 	return nil
 }
 
-func (c *connection) Update(namespace string, document, selector interface{}, options *UpdateOptions) (err os.Error) {
-
+func (c *connection) Update(namespace string, selector, update interface{}, options *UpdateOptions) (err os.Error) {
+	if selector == nil {
+		selector = emptyDoc
+	}
 	flags := 0
 	if options != nil {
 		if options.Upsert {
@@ -129,11 +132,11 @@ func (c *connection) Update(namespace string, document, selector interface{}, op
 	b.WriteUint32(0)             // reserved
 	b.WriteCString(namespace)    // namespace
 	b.WriteUint32(uint32(flags)) // flags
-	b, err = Encode(b, document)
+	b, err = Encode(b, selector)
 	if err != nil {
 		return err
 	}
-	b, err = Encode(b, selector)
+	b, err = Encode(b, update)
 	if err != nil {
 		return err
 	}
@@ -161,7 +164,9 @@ func (c *connection) Insert(namespace string, documents ...interface{}) (err os.
 }
 
 func (c *connection) Remove(namespace string, selector interface{}, options *RemoveOptions) (err os.Error) {
-
+	if selector == nil {
+		selector = emptyDoc
+	}
 	flags := 0
 	if options != nil {
 		if options.Single {
@@ -184,11 +189,14 @@ func (c *connection) Remove(namespace string, selector interface{}, options *Rem
 }
 
 func (c *connection) Find(namespace string, query interface{}, options *FindOptions) (Cursor, os.Error) {
-
 	r := cursor{
 		conn:      c,
 		namespace: namespace,
 		requestId: c.nextId(),
+	}
+
+	if query == nil {
+		query = emptyDoc
 	}
 
 	var fields interface{}

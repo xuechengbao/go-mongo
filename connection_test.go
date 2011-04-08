@@ -18,18 +18,18 @@ import (
 	"testing"
 )
 
-func dialAndDrop(t *testing.T, dbname string) Database {
+func dialAndDrop(t *testing.T, dbname, collectionName string) Collection {
 	c, err := Dial("127.0.0.1")
 	if err != nil {
 		t.Fatal("dial", err)
 	}
 	db := Database{c, dbname, DefaultLastErrorCmd}
-	err = db.Run(Doc{{"dropDatabase", 1}}, nil)
-	if err != nil {
+	err = db.Run(D{{"drop", collectionName}}, nil)
+	if err != nil && err.String() != "ns not found" {
 		db.Conn.Close()
 		t.Fatal("drop", err)
 	}
-	return db
+	return db.C(collectionName)
 }
 
 var findOptionsTests = []struct {
@@ -65,10 +65,8 @@ var findOptionsTests = []struct {
 }
 
 func TestFindOptions(t *testing.T) {
-	db := dialAndDrop(t, "go-mongo-test")
-	defer db.Conn.Close()
-
-	c := db.C("test")
+	c := dialAndDrop(t, "go-mongo-test", "test")
+	defer c.Conn.Close()
 
 	for i := 0; i < 200; i++ {
 		err := c.Insert(map[string]int{"x": i})
@@ -78,7 +76,7 @@ func TestFindOptions(t *testing.T) {
 	}
 
 	for _, tt := range findOptionsTests {
-		r, err := c.Find(Doc{}).
+		r, err := c.Find(nil).
 			Limit(tt.limit).
 			BatchSize(tt.batchSize).
 			Exhaust(tt.exhaust).
@@ -89,7 +87,7 @@ func TestFindOptions(t *testing.T) {
 		}
 		count := 0
 		for r.HasNext() {
-			var m map[string]interface{}
+			var m M
 			err = r.Next(&m)
 			if err != nil {
 				t.Error("findOptionsTest:", tt, "count:", count, "next err:", err)
@@ -104,12 +102,11 @@ func TestFindOptions(t *testing.T) {
 }
 
 func TestTailableCursor(t *testing.T) {
-	db := dialAndDrop(t, "go-mongo-test")
-	defer db.Conn.Close()
-	c := db.C("capped")
+	c := dialAndDrop(t, "go-mongo-test", "capped")
+	defer c.Conn.Close()
 
-	err := db.Run(
-		Doc{{"create", c.Name()},
+	err := c.Db().Run(
+		D{{"create", c.Name()},
 			{"capped", true},
 			{"size", 1000.0}},
 		nil)
@@ -127,7 +124,7 @@ func TestTailableCursor(t *testing.T) {
 		}
 
 		if r == nil {
-			r, err = c.Find(Doc{}).Tailable(true).Cursor()
+			r, err = c.Find(nil).Tailable(true).Cursor()
 			if err != nil {
 				t.Fatal("find", err)
 			}
@@ -136,7 +133,7 @@ func TestTailableCursor(t *testing.T) {
 
 		i := 0
 		for r.HasNext() {
-			var m map[string]interface{}
+			var m M
 			err = r.Next(&m)
 			if err != nil {
 				t.Fatal("next", n, i, err)
@@ -153,33 +150,29 @@ func TestTailableCursor(t *testing.T) {
 }
 
 func TestStuff(t *testing.T) {
-	db := dialAndDrop(t, "go-mongo-test")
-	defer db.Conn.Close()
-
-	c := db.C("test")
+	c := dialAndDrop(t, "go-mongo-test", "test")
+	defer c.Conn.Close()
 
 	id := NewObjectId()
-	err := c.Insert(map[string]interface{}{"_id": id, "x": 1})
+	err := c.Insert(M{"_id": id, "x": 1})
 	if err != nil {
 		t.Fatal("insert", err)
 	}
 
 	ref := DBRef{Id: id, Collection: c.Name()}
-	var m map[string]interface{}
-	err = db.Dereference(ref, false, &m)
+	var m M
+	err = c.Db().Dereference(ref, false, &m)
 	if err != nil {
 		t.Fatal("dereference", err)
 	}
 
-	err = c.Update(
-		map[string]interface{}{"_id": id},
-		map[string]interface{}{"$inc": map[string]interface{}{"x": 1}})
+	err = c.Update(M{"_id": id}, M{"$inc": map[string]interface{}{"x": 1}})
 	if err != nil {
 		t.Fatal("update", err)
 	}
 
 	m = nil
-	err = c.Find(map[string]interface{}{"_id": id}).One(&m)
+	err = c.Find(M{"_id": id}).One(&m)
 	if err != nil {
 		t.Fatal("findone after update", err)
 	}
@@ -188,23 +181,23 @@ func TestStuff(t *testing.T) {
 		t.Fatal("expect x = 2, got", m["x"])
 	}
 
-	err = c.Remove(map[string]interface{}{"_id": id})
+	err = c.Remove(M{"_id": id})
 	if err != nil {
 		t.Fatal("remove", err)
 	}
 
 	m = nil
-	err = c.Find(map[string]interface{}{"_id": id}).One(&m)
+	err = c.Find(M{"_id": id}).One(&m)
 	if err != EOF {
 		t.Fatal("findone, expect EOF, got", err)
 	}
 
 	// Don't panic of connection closed before cursor.
-	r, err := c.Find(Doc{}).Cursor()
+	r, err := c.Find(nil).Cursor()
 	if err != nil {
 		t.Fatal("find", err)
 	}
-	db.Conn.Close()
+	c.Conn.Close()
 	r.HasNext()
 	r.Close()
 }

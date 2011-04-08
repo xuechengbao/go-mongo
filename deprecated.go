@@ -18,9 +18,14 @@ import (
 	"os"
 )
 
-// FindOne returns a single result for a query.
-//
-// Deprecated. Use Collection{conn, namespace}.Find(query).One(result)
+// Doc is deprecated. Use D instead.
+type Doc []DocItem
+
+func (d *Doc) Append(name string, value interface{}) {
+	*d = append(*d, DocItem{name, value})
+}
+
+// FindOne is deprecated. Use Collection{conn, namespace}.Find(query).One(result) instead.
 func FindOne(conn Conn, namespace string, query interface{}, options *FindOptions, result interface{}) os.Error {
 	q := Collection{Conn: conn, Namespace: namespace}.Find(query)
 	if options != nil {
@@ -29,22 +34,13 @@ func FindOne(conn Conn, namespace string, query interface{}, options *FindOption
 	return q.One(result)
 }
 
-// RunCommand executes the command cmd on the database specified by the
-// database component of namespace. The function returns an error if the "ok"
-// field in the command response is false.
-//
-// Deprecated. Use Database{conn, dbname}.Run(cmd, result)
+// RunCommand is deprecated. Use Database{conn, dbname}.Run(cmd, result) instead.
 func RunCommand(conn Conn, namespace string, cmd Doc, result interface{}) os.Error {
 	dbname, _ := SplitNamespace(namespace)
 	return Database{Conn: conn, Name: dbname}.Run(cmd, result)
 }
 
-// LastError returns the last error for a database. The database is specified
-// by the database component of namespace. The command cmd is used to fetch the
-// last error. If cmd is nil, then the command {"getLasetError": 1} is used to
-// get the error. 
-//
-// Deprecated. Use Database{Conn: conn, Name: dbname}.LastError(cmd)
+// LastError is deprecated. Use Database{Conn: conn, Name: dbname}.LastError(cmd) instead.
 func LastError(conn Conn, namespace string, cmd interface{}) os.Error {
 	dbname, _ := SplitNamespace(namespace)
 	return Database{Conn: conn, Name: dbname}.LastError(cmd)
@@ -57,30 +53,22 @@ func commandNamespace(namespace string) string {
 	return name + ".$cmd"
 }
 
-// SafeInsert returns the last error from the database after calling conn.Insert().
-// 
-// Deprecated. Use SafeConn{conn, errorCmd}.Insert(namespace, documents)
+// SafeInsert is deprecated.
 func SafeInsert(conn Conn, namespace string, errorCmd interface{}, documents ...interface{}) os.Error {
 	return SafeConn{conn, errorCmd}.Insert(namespace, documents...)
 }
 
-// SafeUpdate returns the last error from the database after calling conn.Update().
-//
-// Deprecated. Use SafeConn{conn, errorCmd}.Update(namespace, selector, update, options)
+// SafeUpdate is deprecated.
 func SafeUpdate(conn Conn, namespace string, errorCmd interface{}, selector, update interface{}, options *UpdateOptions) os.Error {
 	return SafeConn{conn, errorCmd}.Update(namespace, selector, update, options)
 }
 
-// SafeRemove returns the last error from the database after calling conn.Remove().
-//
-// Deprecated. Use SafeConn{conn, errorCmd}.Remove(namespace, selector, options)
+// SafeRemove is deprecated.
 func SafeRemove(conn Conn, namespace string, errorCmd interface{}, selector interface{}, options *RemoveOptions) os.Error {
 	return SafeConn{conn, errorCmd}.Remove(namespace, selector, options)
 }
 
-// SafeConn wraps a connection with safe mode handling. The wrapper fetches the
-// last error from the server after each call to a mutating operation (insert,
-// update, remove) and returns the error if any as an os.Error.
+// SafeConn is deprecated.
 type SafeConn struct {
 	// The connecion to wrap.
 	Conn
@@ -110,9 +98,7 @@ func (c SafeConn) Remove(namespace string, selector interface{}, options *Remove
 	return c.checkError(namespace, c.Conn.Remove(namespace, selector, options))
 }
 
-// Count returns the number of documents for query.
-//
-// Deprecated. Use Collection{Conn: conn, Namespace:namespace}.Find(query).Count()
+// Count is deprected. Use Collection{Conn: conn, Namespace:namespace}.Find(query).Count() instead.
 func Count(conn Conn, namespace string, query interface{}, options *FindOptions) (int64, os.Error) {
 	q := Collection{Conn: conn, Namespace: namespace}.Find(query)
 	if options != nil {
@@ -121,25 +107,7 @@ func Count(conn Conn, namespace string, query interface{}, options *FindOptions)
 	return q.Count()
 }
 
-// FindAndModifyOptions specifies options for the FindAndUpdate and FindAndRemove functions.
-type FindAndModifyOptions struct {
-	// Set to true if you want to return the modified object rather than the original. Ignored for remove.
-	New bool
-
-	// Specify subset of fields to return.
-	Fields interface{}
-
-	// Create object if it doesn't exist. Ignored for remove.
-	Upsert bool
-
-	// If multiple docs match, choose the first one in the specified sort order
-	// as the object to update.
-	Sort Doc
-}
-
-// FindAndUpdate updates and returns a document specified by selector with
-// operator update. FindAndUpdate is a wrapper around the MongoDB findAndModify
-// command.
+// FindAndUpdate is deprecated. Use the Collection FindAndUpdate method instead.
 func FindAndUpdate(conn Conn, namespace string, selector, update interface{}, options *FindAndModifyOptions, result interface{}) os.Error {
 	_, name := SplitNamespace(namespace)
 	return findAndModify(
@@ -153,8 +121,7 @@ func FindAndUpdate(conn Conn, namespace string, selector, update interface{}, op
 		result)
 }
 
-// FindAndRemove removes and returns a document specified by selector.
-// FindAndRemove is a wrapper around the MongoDB findAndModify command.
+// FindAndRemove is deprecated. Use the Collection FindAndRemove method instead.
 func FindAndRemove(conn Conn, namespace string, selector interface{}, options *FindAndModifyOptions, result interface{}) os.Error {
 	_, name := SplitNamespace(namespace)
 	return findAndModify(

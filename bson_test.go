@@ -319,6 +319,18 @@ func TestDecodeStruct(t *testing.T) {
 }
 
 func TestEncodeOrderedMap(t *testing.T) {
+	m := D{{"test", "hello world"}}
+	expected := []byte("\x1b\x00\x00\x00\x02test\x00\f\x00\x00\x00hello world\x00\x00")
+	var actual []byte
+	actual, err := Encode(actual, m)
+	if err != nil {
+		t.Error("error encoding map %s", err)
+	} else if !bytes.Equal(expected, actual) {
+		t.Errorf("  expected %q\n  actual   %q", expected, actual)
+	}
+}
+
+func TestEncodeOrderedMapOld(t *testing.T) {
 	m := Doc{{"test", "hello world"}}
 	expected := []byte("\x1b\x00\x00\x00\x02test\x00\f\x00\x00\x00hello world\x00\x00")
 	var actual []byte

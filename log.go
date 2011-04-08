@@ -142,7 +142,7 @@ func (r logCursor) Close() os.Error {
 func (r logCursor) Next(value interface{}) os.Error {
 	var bd BSONData
 	err := r.Cursor.Next(&bd)
-	var m map[string]interface{}
+	var m M
 	if err == nil {
 		err = Decode(bd.Data, value)
 		Decode(bd.Data, &m)

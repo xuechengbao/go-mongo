@@ -24,7 +24,9 @@ GOFILES=\
     connection.go\
     pool.go\
     log.go\
-    helpers.go\
-    database.go collection.go query.go
+    database.go\
+    collection.go\
+    query.go\
+    deprecated.go\
  
 include $(GOROOT)/src/Make.pkg

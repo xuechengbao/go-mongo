@@ -100,6 +100,9 @@ func (c Collection) Remove(selector interface{}) os.Error {
 
 // Find returns a query object for the given filter. 
 func (c Collection) Find(filter interface{}) *Query {
+	if filter == nil {
+		filter = emptyDoc
+	}
 	return &Query{
 		Conn:      c.Conn,
 		Namespace: c.Namespace,
@@ -108,7 +111,7 @@ func (c Collection) Find(filter interface{}) *Query {
 }
 
 // IndexName returns the standard name for an index with keys.
-func IndexName(keys Doc) string {
+func IndexName(keys D) string {
 	var buf bytes.Buffer
 	for i, key := range keys {
 		if i != 0 {
@@ -134,9 +137,9 @@ type IndexOptions struct {
 }
 
 // CreateIndex creates an index on keys.
-func (c Collection) CreateIndex(keys Doc, options *IndexOptions) os.Error {
+func (c Collection) CreateIndex(keys D, options *IndexOptions) os.Error {
 	index := struct {
-		Keys      Doc    "key"
+		Keys      D      "key"
 		Namespace string "ns"
 		IndexOptions
 	}{
@@ -152,5 +155,87 @@ func (c Collection) CreateIndex(keys Doc, options *IndexOptions) os.Error {
 		index.Name = IndexName(keys)
 	}
 
+	if c.LastErrorCmd == nil {
+		c.LastErrorCmd = DefaultLastErrorCmd
+	}
+
 	return c.Db().C("system.indexes").Insert(&index)
+}
+
+// FindAndModifyOptions specifies options for the FindAndUpdate and FindAndRemove methods.
+type FindAndModifyOptions struct {
+	// Set to true if you want to return the modified object rather than the
+	// original. Ignored for remove.
+	New bool "new/c"
+
+	// Specify subset of fields to return.
+	Fields interface{} "fields"
+
+	// Create object if it doesn't exist. Ignored for remove.
+	Upsert bool "upsert/c"
+
+	// If multiple docs match, choose the first one in the specified sort order
+	// as the object to update. 
+	Sort interface{} "sort"
+}
+
+// FindAndUpdate updates and returns a document specified by selector with
+// operator update. FindAndUpdate is a wrapper around the MongoDB findAndModify
+// command.
+func (c Collection) FindAndUpdate(selector, update interface{}, options *FindAndModifyOptions, result interface{}) os.Error {
+	_, name := SplitNamespace(c.Namespace)
+	cmd := struct {
+		Collection string      "findAndModify"
+		Selector   interface{} "query"
+		Update     interface{} "update"
+		FindAndModifyOptions
+	}{
+		Collection: name,
+		Selector:   selector,
+		Update:     update,
+	}
+	if options != nil {
+		cmd.FindAndModifyOptions = *options
+	}
+	return c.findAndModify(&cmd, result)
+}
+
+// FindAndRemove removes and returns a document specified by selector.
+// FindAndRemove is a wrapper around the MongoDB findAndModify command.
+func (c Collection) FindAndRemove(selector interface{}, options *FindAndModifyOptions, result interface{}) os.Error {
+	_, name := SplitNamespace(c.Namespace)
+	cmd := struct {
+		Collection string      "findAndModify"
+		Selector   interface{} "query"
+		Remove     bool        "remove"
+		FindAndModifyOptions
+	}{
+		Collection: name,
+		Selector:   selector,
+		Remove:     true,
+	}
+	if options != nil {
+		cmd.FindAndModifyOptions = *options
+	}
+	return c.findAndModify(&cmd, result)
+}
+
+func (c Collection) findAndModify(cmd interface{}, result interface{}) os.Error {
+	dbname, _ := SplitNamespace(c.Namespace)
+	cursor, err := c.Conn.Find(dbname+".$cmd", cmd, runFindOptions)
+	if err != nil {
+		return err
+	}
+	defer cursor.Close()
+	var r struct {
+		CommandResponse
+		Value BSONData "value"
+	}
+	if err := cursor.Next(&r); err != nil {
+		return err
+	}
+	if err := r.Error(); err != nil {
+		return err
+	}
+	return Decode(r.Value.Data, result)
 }

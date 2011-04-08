@@ -5,19 +5,17 @@ import (
 )
 
 func TestLastError(t *testing.T) {
-	db := dialAndDrop(t, "go-mongo-test")
-	defer db.Conn.Close()
-
-	db.LastErrorCmd = nil
-	c := db.C("test")
+	c := dialAndDrop(t, "go-mongo-test", "test")
+	defer c.Conn.Close()
+	c.LastErrorCmd = nil
 
 	// Insert duplicate id to create an error.
 	id := NewObjectId()
 	for i := 0; i < 2; i++ {
-		c.Insert(map[string]interface{}{"_id": id})
+		c.Insert(M{"_id": id})
 	}
 
-	err := db.LastError(nil)
+	err := c.Db().LastError(nil)
 	if err, ok := err.(*MongoError); !ok {
 		t.Fatalf("expected error, got %+v", err)
 	} else if err.Code == 0 {
@@ -34,8 +32,8 @@ func TestRunCommand(t *testing.T) {
 
 	db := Database{c, "admin", nil}
 
-	var m map[string]interface{}
-	err = db.Run(Doc{{"buildInfo", 1}}, &m)
+	var m M
+	err = db.Run(D{{"buildInfo", 1}}, &m)
 	if err != nil {
 		t.Fatal("runcommand", err)
 	}
@@ -43,7 +41,7 @@ func TestRunCommand(t *testing.T) {
 		t.Fatal("command result not set")
 	}
 	m = nil
-	err = db.Run(Doc{{"thisIsNotACommand", 1}}, &m)
+	err = db.Run(D{{"thisIsNotACommand", 1}}, &m)
 	if err == nil {
 		t.Fatal("error not returned for bad command")
 	}
