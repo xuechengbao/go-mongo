@@ -46,3 +46,25 @@ func TestRunCommand(t *testing.T) {
 		t.Fatal("error not returned for bad command")
 	}
 }
+
+func TestDBRef(t *testing.T) {
+	c := dialAndDrop(t, "go-mongo-test", "test")
+	defer c.Conn.Close()
+
+	id := NewObjectId()
+	err := c.Insert(M{"_id": id})
+	if err != nil {
+		t.Fatal("insert", err)
+	}
+
+	ref := DBRef{Id: id, Collection: c.Name()}
+	var m M
+	err = c.Db().Dereference(ref, false, &m)
+	if err != nil {
+		t.Fatal("dereference", err)
+	}
+
+	if m["_id"] != id {
+		t.Fatalf("m[_id] = %v, want %v", m["_id"], id)
+	}
+}

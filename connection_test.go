@@ -117,7 +117,7 @@ func TestTailableCursor(t *testing.T) {
 	var r Cursor
 	for n := 1; n < 4; n++ {
 		for i := 0; i < n; i++ {
-			err = c.Insert(map[string]int{"x": i})
+			err = c.Insert(M{"x": i})
 			if err != nil {
 				t.Fatal("insert", i, err)
 			}
@@ -149,7 +149,7 @@ func TestTailableCursor(t *testing.T) {
 	}
 }
 
-func TestStuff(t *testing.T) {
+func TestUpdate(t *testing.T) {
 	c := dialAndDrop(t, "go-mongo-test", "test")
 	defer c.Conn.Close()
 
@@ -159,19 +159,12 @@ func TestStuff(t *testing.T) {
 		t.Fatal("insert", err)
 	}
 
-	ref := DBRef{Id: id, Collection: c.Name()}
-	var m M
-	err = c.Db().Dereference(ref, false, &m)
-	if err != nil {
-		t.Fatal("dereference", err)
-	}
-
-	err = c.Update(M{"_id": id}, M{"$inc": map[string]interface{}{"x": 1}})
+	err = c.Update(M{"_id": id}, M{"$inc": M{"x": 1}})
 	if err != nil {
 		t.Fatal("update", err)
 	}
 
-	m = nil
+	var m M
 	err = c.Find(M{"_id": id}).One(&m)
 	if err != nil {
 		t.Fatal("findone after update", err)
@@ -180,24 +173,51 @@ func TestStuff(t *testing.T) {
 	if m["x"] != 2 {
 		t.Fatal("expect x = 2, got", m["x"])
 	}
+}
+
+func TestRemove(t *testing.T) {
+	c := dialAndDrop(t, "go-mongo-test", "test")
+	defer c.Conn.Close()
+
+	id := NewObjectId()
+	err := c.Insert(M{"_id": id, "x": 1})
+	if err != nil {
+		t.Fatal("insert", err)
+	}
 
 	err = c.Remove(M{"_id": id})
 	if err != nil {
 		t.Fatal("remove", err)
 	}
 
-	m = nil
+	var m M
 	err = c.Find(M{"_id": id}).One(&m)
 	if err != EOF {
 		t.Fatal("findone, expect EOF, got", err)
 	}
+}
 
-	// Don't panic of connection closed before cursor.
+func TestCursorCloseAfterConnectionClose(t *testing.T) {
+
+	c := dialAndDrop(t, "go-mongo-test", "test")
+	defer c.Conn.Close()
+
+	id := NewObjectId()
+	err := c.Insert(M{"_id": id, "x": 1})
+	if err != nil {
+		t.Fatal("insert", err)
+	}
+
 	r, err := c.Find(nil).Cursor()
 	if err != nil {
 		t.Fatal("find", err)
 	}
+
+	var m M
+
 	c.Conn.Close()
 	r.HasNext()
+	r.Next(&m)
 	r.Close()
+	r.Next(&m)
 }
