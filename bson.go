@@ -247,8 +247,9 @@ type fieldInfo struct {
 }
 
 type structInfo struct {
-	m map[string]*fieldInfo
-	l []*fieldInfo
+	m      map[string]*fieldInfo
+	l      []*fieldInfo
+	fields D
 }
 
 func compileStructInfo(t *reflect.StructType, depth map[string]int, index []int, si *structInfo) {
@@ -331,6 +332,26 @@ func structInfoForType(t *reflect.StructType) *structInfo {
 
 	si = &structInfo{m: make(map[string]*fieldInfo)}
 	compileStructInfo(t, make(map[string]int), nil, si)
+
+	hasId := false
+	for _, fi := range si.l {
+		if fi.name == "_id" {
+			hasId = true
+		} else {
+			si.fields.Append(fi.name, 1)
+		}
+	}
+	if !hasId {
+		// Explicity exclude _id because it's included by default.
+		si.fields.Append("_id", 0)
+	}
+
 	structInfoCache[t] = si
 	return si
+}
+
+// StructFields returns a MongoDB field specification for the given struct
+// type.
+func StructFields(t *reflect.StructType) interface{} {
+	return structInfoForType(t).fields
 }

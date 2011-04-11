@@ -368,3 +368,27 @@ func TestObjectId(t *testing.T) {
 		t.Error("creation time for invalid id = %d, want 0", t1)
 	}
 }
+
+var structFieldsTests = []struct {
+	v interface{}
+	m M
+}{
+	{struct{}{}, M{"_id": 0}},
+	{struct {
+		Id   int "_id"
+		Test int
+	}{}, M{"Test": 1}},
+}
+
+func TestStructFields(t *testing.T) {
+	for _, tt := range structFieldsTests {
+		fields := StructFields(reflect.NewValue(tt.v).Type().(*reflect.StructType))
+		m := make(M)
+		for _, di := range fields.(D) {
+			m[di.Key] = di.Value
+		}
+		if !reflect.DeepEqual(m, tt.m) {
+			t.Errorf("%+v fields=%v, want %v\n", tt.v, m, tt.m)
+		}
+	}
+}

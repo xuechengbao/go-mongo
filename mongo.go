@@ -78,8 +78,8 @@ type FindOptions struct {
 	// will fail if a shard is not available.
 	PartialResults bool
 
-	// Sets the number of documents to omit - starting from the first document
-	// in the resulting dataset - when returning the result of the query.
+	// Skip specifies the number of documents the server should skip at the
+	// beginning of the result set.
 	Skip int
 
 	// Sets the number of documents to return. 

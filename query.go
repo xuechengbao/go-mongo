@@ -71,7 +71,8 @@ func (q *Query) Limit(limit int) *Query {
 	return q
 }
 
-// Skip specifies the number of documents to skip in the result set.
+// Skip specifies the number of documents the server should skip at the
+// beginning of the result set.
 func (q *Query) Skip(skip int) *Query {
 	q.Options.Skip = skip
 	return q
@@ -84,7 +85,11 @@ func (q *Query) BatchSize(batchSize int) *Query {
 	return q
 }
 
-// Fields specifies the fields to include in returned documents.	
+// Fields limits the fields in the returned documents.  Fields contains one or
+// more elements, each of which is the name of a field that should be returned,
+// and the integer value 1. 
+//
+// http://www.mongodb.org/display/DOCS/Retrieving+a+Subset+of+Fields
 func (q *Query) Fields(fields interface{}) *Query {
 	q.Options.Fields = fields
 	return q
