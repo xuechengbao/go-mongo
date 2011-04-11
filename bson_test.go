@@ -291,6 +291,21 @@ func TestDecodeMap(t *testing.T) {
 			continue
 		}
 		m := map[string]interface{}{}
+		err := Decode([]byte(bt.data), m)
+		if err != nil {
+			t.Errorf("Decode(%q, m) returned error %v", bt.data, err)
+		} else if !reflect.DeepEqual(bt.mv, m) {
+			t.Errorf("Decode(%q, m) m = %q, want %q", bt.data, m, bt.mv)
+		}
+	}
+}
+
+func TestDecodeMapPtr(t *testing.T) {
+	for _, bt := range bsonTests {
+		if bt.psv == nil {
+			continue
+		}
+        var m map[string]interface{}
 		err := Decode([]byte(bt.data), &m)
 		if err != nil {
 			t.Errorf("Decode(%q, m) returned error %v", bt.data, err)
@@ -369,15 +384,52 @@ func TestObjectId(t *testing.T) {
 	}
 }
 
+func TestBadDecodeResults(t *testing.T) {
+	empty := []byte("\x05\x00\x00\x00\x00")
+
+	var m M
+	err := Decode(empty, m)
+	if err == nil {
+		t.Error("Decode nil map did not return an error.")
+	}
+
+	err = Decode(empty, struct{}{})
+	if err == nil {
+		t.Error("Decode struct value did not return an error.")
+	}
+
+	var p *struct{}
+	err = Decode(empty, p)
+	if err == nil {
+		t.Error("Decode nil pointer did not return an error.")
+	}
+
+	err = Decode(empty, 1)
+	if err == nil {
+		t.Error("Decode int did not return an error.")
+	}
+
+	err = Decode(empty, new(int))
+	if err == nil {
+		t.Error("Decode *int did not return an error.")
+	}
+}
+
 var structFieldsTests = []struct {
 	v interface{}
 	m M
 }{
-	{struct{}{}, M{"_id": 0}},
-	{struct {
-		Id   int "_id"
-		Test int
-	}{}, M{"Test": 1}},
+	{
+		struct{}{},
+		M{"_id": 0},
+	},
+	{
+		struct {
+			Id   int "_id"
+			Test int
+		}{},
+		M{"Test": 1},
+	},
 }
 
 func TestStructFields(t *testing.T) {

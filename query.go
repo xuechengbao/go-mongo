@@ -159,8 +159,8 @@ func (q *Query) simplifyQuery() interface{} {
 	return &q.Spec
 }
 
-// One executes the query and returns the first result.
-func (q *Query) One(result interface{}) os.Error {
+// One executes the query and returns the first result. 
+func (q *Query) One(output interface{}) os.Error {
 	q.Options.Limit = 1
 	q.Options.BatchSize = -1
 	cursor, err := q.Conn.Find(q.Namespace, q.simplifyQuery(), &q.Options)
@@ -168,7 +168,7 @@ func (q *Query) One(result interface{}) os.Error {
 		return err
 	}
 	defer cursor.Close()
-	return cursor.Next(result)
+	return cursor.Next(output)
 }
 
 // Cursor executes the query and returns a cursor over the results. Subsequent

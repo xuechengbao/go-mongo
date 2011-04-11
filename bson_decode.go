@@ -82,13 +82,26 @@ func Decode(data []byte, v interface{}) (err os.Error) {
 		}
 	}()
 
-	d := decodeState{data: data}
-
-	pv, ok := reflect.NewValue(v).(*reflect.PtrValue)
-	if !ok || pv.IsNil() {
-		return os.NewError("bson: decode arg must be pointer")
+	value, ok := v.(reflect.Value)
+	if !ok {
+		value = reflect.NewValue(v)
+		switch v := value.(type) {
+		case *reflect.MapValue:
+			if v.IsNil() {
+				return os.NewError("bson: Decode map arg must not be nil.")
+			}
+		case *reflect.PtrValue:
+			if v.IsNil() {
+				return os.NewError("bson: Decode pointer arg must not be nil.")
+			}
+			value = v.Elem()
+		default:
+			return os.NewError("bson: Decode arg must be pointer or map.")
+		}
 	}
-	d.decodeValue(kindDocument, pv.Elem())
+
+	d := decodeState{data: data}
+	d.decodeValue(kindDocument, value)
 	return d.savedError
 }
 
@@ -214,12 +227,6 @@ func (d *decodeState) decodeValue(kind int, v reflect.Value) {
 // non-pointer.  
 func (d *decodeState) indirect(v reflect.Value) reflect.Value {
 	for {
-		/*
-			if iv, ok := v.(*reflect.InterfaceValue); ok && !iv.IsNil() {
-				v = iv.Elem()
-				continue
-			}
-		*/
 		pv, ok := v.(*reflect.PtrValue)
 		if !ok {
 			break

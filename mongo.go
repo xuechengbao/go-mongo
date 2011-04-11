@@ -156,6 +156,7 @@ type Cursor interface {
 	// HasNext returns true if there are more documents to retrieve.
 	HasNext() bool
 
-	// Next fetches the next document from the cursor.
+	// Next fetches the next document from the cursor. Value must be a map or
+	// a non-nil pointer to struct or map.
 	Next(value interface{}) os.Error
 }
