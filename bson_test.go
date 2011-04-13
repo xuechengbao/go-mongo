@@ -305,7 +305,7 @@ func TestDecodeMapPtr(t *testing.T) {
 		if bt.psv == nil {
 			continue
 		}
-        var m map[string]interface{}
+		var m map[string]interface{}
 		err := Decode([]byte(bt.data), &m)
 		if err != nil {
 			t.Errorf("Decode(%q, m) returned error %v", bt.data, err)

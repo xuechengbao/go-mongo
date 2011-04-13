@@ -37,6 +37,8 @@ type Collection struct {
 	// name of the database and <collection> is the name of the collection. 
 	Namespace string
 
+	// Command used to check for errors after on insert, update or remove
+	// operation on the collection. If nil, then errors are not checked.
 	LastErrorCmd interface{}
 }
 
@@ -119,7 +121,14 @@ func IndexName(keys D) string {
 		}
 		buf.WriteString(key.Key)
 		buf.WriteByte('_')
-		buf.WriteString(strconv.Itoa(key.Value.(int)))
+		switch v := key.Value.(type) {
+		case int:
+			buf.WriteString(strconv.Itoa(v))
+		case string:
+			buf.WriteString(v)
+		default:
+			panic("Index direction must be integer or string.")
+		}
 	}
 	return buf.String()
 }
@@ -137,6 +146,10 @@ type IndexOptions struct {
 }
 
 // CreateIndex creates an index on keys.
+// 
+// More information:
+// 
+//  http://www.mongodb.org/display/DOCS/Indexes
 func (c Collection) CreateIndex(keys D, options *IndexOptions) os.Error {
 	index := struct {
 		Keys      D      "key"
@@ -182,6 +195,10 @@ type FindAndModifyOptions struct {
 // FindAndUpdate updates and returns a document specified by selector with
 // operator update. FindAndUpdate is a wrapper around the MongoDB findAndModify
 // command.
+//
+// More information:
+//
+//  http://www.mongodb.org/display/DOCS/findAndModify+Command
 func (c Collection) FindAndUpdate(selector, update interface{}, options *FindAndModifyOptions, result interface{}) os.Error {
 	_, name := SplitNamespace(c.Namespace)
 	cmd := struct {
@@ -202,6 +219,10 @@ func (c Collection) FindAndUpdate(selector, update interface{}, options *FindAnd
 
 // FindAndRemove removes and returns a document specified by selector.
 // FindAndRemove is a wrapper around the MongoDB findAndModify command.
+//
+// More information:
+//
+//  http://www.mongodb.org/display/DOCS/findAndModify+Command
 func (c Collection) FindAndRemove(selector interface{}, options *FindAndModifyOptions, result interface{}) os.Error {
 	_, name := SplitNamespace(c.Namespace)
 	cmd := struct {

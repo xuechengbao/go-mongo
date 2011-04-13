@@ -66,6 +66,10 @@ func (q *Query) Sort(sort interface{}) *Query {
 }
 
 // Limit specifies the number of documents to return from the query.
+//
+// More information:
+//
+//  http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%7B%7Blimit%28%29%7D%7D
 func (q *Query) Limit(limit int) *Query {
 	q.Options.Limit = limit
 	return q
@@ -73,6 +77,10 @@ func (q *Query) Limit(limit int) *Query {
 
 // Skip specifies the number of documents the server should skip at the
 // beginning of the result set.
+//
+// More information:
+//
+//  http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%7B%7Bskip%28%29%7D%7D
 func (q *Query) Skip(skip int) *Query {
 	q.Options.Skip = skip
 	return q
@@ -89,12 +97,19 @@ func (q *Query) BatchSize(batchSize int) *Query {
 // more elements, each of which is the name of a field that should be returned,
 // and the integer value 1. 
 //
-// http://www.mongodb.org/display/DOCS/Retrieving+a+Subset+of+Fields
+// More information:
+//
+//  http://www.mongodb.org/display/DOCS/Retrieving+a+Subset+of+Fields
 func (q *Query) Fields(fields interface{}) *Query {
 	q.Options.Fields = fields
 	return q
 }
 
+// SlaveOk specifies if query can be routed to a slave.
+//
+// More information:
+//
+//  http://www.mongodb.org/display/DOCS/Querying#Querying-slaveOk
 func (q *Query) SlaveOk(slaveOk bool) *Query {
 	q.Options.SlaveOk = slaveOk
 	return q

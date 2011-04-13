@@ -65,3 +65,19 @@ func TestFindAndModify(t *testing.T) {
 		t.Fatal("findone, expect EOF, got", err)
 	}
 }
+
+var indexNameTests = []struct {
+	keys D
+	name string
+}{
+	{D{{"up", 1}, {"down", -1}, {"geo", "2d"}}, "up_1_down_-1_geo_2d"},
+}
+
+func TestIndexName(t *testing.T) {
+	for _, tt := range indexNameTests {
+		name := IndexName(tt.keys)
+		if name != tt.name {
+			t.Errorf("%v, name=%s, want %s\n", tt.keys, name, tt.name)
+		}
+	}
+}

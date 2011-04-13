@@ -66,8 +66,14 @@ func (s CommandResponse) Error() os.Error {
 
 // Database represents a MongoDb database.
 type Database struct {
-	Conn         Conn
-	Name         string
+	// Connection to the database.
+	Conn Conn
+
+	// Database name.
+	Name string
+
+	// Command used to check for errors after on insert, update or remove
+	// operation on the collection. If nil, then errors are not checked.
 	LastErrorCmd interface{}
 }
 
@@ -82,6 +88,10 @@ func (db Database) C(name string) Collection {
 }
 
 // Run runs the command cmd on the database.
+// 
+// More information: 
+//
+//  http://www.mongodb.org/display/DOCS/Commands
 func (db Database) Run(cmd interface{}, result interface{}) os.Error {
 	cursor, err := db.Conn.Find(db.Name+".$cmd", cmd, runFindOptions)
 	if err != nil {
@@ -111,6 +121,10 @@ func (db Database) Run(cmd interface{}, result interface{}) os.Error {
 
 // LastError returns the last error for the database using cmd. If cmd is nil,
 // then the command {"getLasetError": 1} is used to get the error.
+//
+// More information:
+//
+//  http://www.mongodb.org/display/DOCS/Last+Error+Commands
 func (db Database) LastError(cmd interface{}) os.Error {
 	if cmd == nil {
 		cmd = DefaultLastErrorCmd
@@ -137,9 +151,11 @@ func (db Database) LastError(cmd interface{}) os.Error {
 }
 
 // DBRef is a reference to a document in a database. Use the Database
-// Dereference method to get the referenced document. See
-// http://www.mongodb.org/display/DOCS/Database+References for more
-// information on DBRefs.
+// Dereference method to get the referenced document. 
+//
+// More information:
+//
+// http://www.mongodb.org/display/DOCS/Database+References 
 type DBRef struct {
 	// The target document's id.
 	Id ObjectId "$id"
