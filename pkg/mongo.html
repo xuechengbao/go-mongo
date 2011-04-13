@@ -16,6 +16,7 @@
 <li><a href="#Encode">func Encode</a>
 <li><a href="#IndexName">func IndexName</a>
 <li><a href="#SplitNamespace">func SplitNamespace</a>
+<li><a href="#StructFields">func StructFields</a>
 <li><a href="#A">type A</a>
 <li><a href="#BSONData">type BSONData</a>
 <li><a href="#Code">type Code</a>
@@ -254,7 +255,7 @@ BSON cannot represent cyclic data structure and Encode does not handle them.
 Passing cyclic structures to Encode will result in an infinite recursion.
 </p>
 
-<h2 id="IndexName">func <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L114">IndexName</a></h2>
+<h2 id="IndexName">func <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L116">IndexName</a></h2>
 <p><code>func IndexName(keys D) string</code></p>
 <p>
 IndexName returns the standard name for an index with keys.
@@ -265,6 +266,13 @@ IndexName returns the standard name for an index with keys.
 <p>
 SplitNamespace splits a namespace into database name and collection name
 components.
+</p>
+
+<h2 id="StructFields">func <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L355">StructFields</a></h2>
+<p><code>func StructFields(t *reflect.StructType) interface{}</code></p>
+<p>
+StructFields returns a MongoDB field specification for the given struct
+type.
 </p>
 
 
@@ -333,83 +341,100 @@ Collection represents a MongoDB collection.
  // name of the database and &lt;collection&gt; is the name of the collection. 
  Namespace string
 
+ // Command used to check for errors after on insert, update or remove
+ // operation on the collection. If nil, then errors are not checked.
  LastErrorCmd interface{}
 }</pre>
 
 
 
 
-    <h3 id="Collection.CreateIndex">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L140">CreateIndex</a></h3>
+    <h3 id="Collection.CreateIndex">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L153">CreateIndex</a></h3>
     <p><code>func (c Collection) CreateIndex(keys D, options *IndexOptions) os.Error</code></p>
     <p>
 CreateIndex creates an index on keys.
 </p>
+<p>
+More information:
+</p>
+<pre><a href="http://www.mongodb.org/display/DOCS/Indexes">http://www.mongodb.org/display/DOCS/Indexes</a>
+</pre>
 
-    <h3 id="Collection.Db">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L50">Db</a></h3>
+    <h3 id="Collection.Db">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L52">Db</a></h3>
     <p><code>func (c Collection) Db() Database</code></p>
     <p>
 Db returns the database for this collection.
 </p>
 
-    <h3 id="Collection.Find">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L102">Find</a></h3>
+    <h3 id="Collection.Find">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L104">Find</a></h3>
     <p><code>func (c Collection) Find(filter interface{}) *Query</code></p>
     <p>
 Find returns a query object for the given filter.
 </p>
 
-    <h3 id="Collection.FindAndRemove">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L205">FindAndRemove</a></h3>
+    <h3 id="Collection.FindAndRemove">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L226">FindAndRemove</a></h3>
     <p><code>func (c Collection) FindAndRemove(selector interface{}, options *FindAndModifyOptions, result interface{}) os.Error</code></p>
     <p>
 FindAndRemove removes and returns a document specified by selector.
 FindAndRemove is a wrapper around the MongoDB findAndModify command.
 </p>
+<p>
+More information:
+</p>
+<pre><a href="http://www.mongodb.org/display/DOCS/findAndModify+Command">http://www.mongodb.org/display/DOCS/findAndModify+Command</a>
+</pre>
 
-    <h3 id="Collection.FindAndUpdate">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L185">FindAndUpdate</a></h3>
+    <h3 id="Collection.FindAndUpdate">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L202">FindAndUpdate</a></h3>
     <p><code>func (c Collection) FindAndUpdate(selector, update interface{}, options *FindAndModifyOptions, result interface{}) os.Error</code></p>
     <p>
 FindAndUpdate updates and returns a document specified by selector with
 operator update. FindAndUpdate is a wrapper around the MongoDB findAndModify
 command.
 </p>
+<p>
+More information:
+</p>
+<pre><a href="http://www.mongodb.org/display/DOCS/findAndModify+Command">http://www.mongodb.org/display/DOCS/findAndModify+Command</a>
+</pre>
 
-    <h3 id="Collection.Insert">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L70">Insert</a></h3>
+    <h3 id="Collection.Insert">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L72">Insert</a></h3>
     <p><code>func (c Collection) Insert(documents ...interface{}) os.Error</code></p>
     <p>
 Insert adds document to the collection.
 </p>
 
-    <h3 id="Collection.Name">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L44">Name</a></h3>
+    <h3 id="Collection.Name">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L46">Name</a></h3>
     <p><code>func (c Collection) Name() string</code></p>
     <p>
 Name returns the collection&#39;s name.
 </p>
 
-    <h3 id="Collection.Remove">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L97">Remove</a></h3>
+    <h3 id="Collection.Remove">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L99">Remove</a></h3>
     <p><code>func (c Collection) Remove(selector interface{}) os.Error</code></p>
     <p>
 Remove removes all documents found by selector.
 </p>
 
-    <h3 id="Collection.RemoveFirst">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L92">RemoveFirst</a></h3>
+    <h3 id="Collection.RemoveFirst">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L94">RemoveFirst</a></h3>
     <p><code>func (c Collection) RemoveFirst(selector interface{}) os.Error</code></p>
     <p>
 RemoveFirst removes the first document found by selector.
 </p>
 
-    <h3 id="Collection.Update">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L76">Update</a></h3>
+    <h3 id="Collection.Update">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L78">Update</a></h3>
     <p><code>func (c Collection) Update(selector, update interface{}) os.Error</code></p>
     <p>
 Update updates the first document in the collection found by selector with
 update.
 </p>
 
-    <h3 id="Collection.UpdateAll">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L87">UpdateAll</a></h3>
+    <h3 id="Collection.UpdateAll">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L89">UpdateAll</a></h3>
     <p><code>func (c Collection) UpdateAll(selector interface{}, update interface{}) os.Error</code></p>
     <p>
 UpdateAll updates all documents matching selector with update.
 </p>
 
-    <h3 id="Collection.Upsert">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L82">Upsert</a></h3>
+    <h3 id="Collection.Upsert">func (Collection) <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L84">Upsert</a></h3>
     <p><code>func (c Collection) Upsert(selector interface{}, update interface{}) os.Error</code></p>
     <p>
 Upsert updates the first document found by selector with update. If no
@@ -533,7 +558,8 @@ tailable cursors.
  // HasNext returns true if there are more documents to retrieve.
  HasNext() bool
 
- // Next fetches the next document from the cursor.
+ // Next fetches the next document from the cursor. Value must be a map or
+ // a non-nil pointer to struct or map.
  Next(value interface{}) os.Error
 }</pre>
 
@@ -563,9 +589,13 @@ Append adds an item to the document..
 <h2 id="DBRef">type DBRef</h2>
 <p>
 DBRef is a reference to a document in a database. Use the Database
-Dereference method to get the referenced document. See
-<a href="http://www.mongodb.org/display/DOCS/Database+References">http://www.mongodb.org/display/DOCS/Database+References</a> for more
-information on DBRefs.
+Dereference method to get the referenced document.
+</p>
+<p>
+More information:
+</p>
+<p>
+<a href="http://www.mongodb.org/display/DOCS/Database+References">http://www.mongodb.org/display/DOCS/Database+References</a>
 </p>
 
 <pre>type DBRef struct {
@@ -589,39 +619,55 @@ Database represents a MongoDb database.
 </p>
 
 <pre>type Database struct {
- Conn         Conn
- Name         string
+ // Connection to the database.
+ Conn Conn
+
+ // Database name.
+ Name string
+
+ // Command used to check for errors after on insert, update or remove
+ // operation on the collection. If nil, then errors are not checked.
  LastErrorCmd interface{}
 }</pre>
 
 
 
 
-    <h3 id="Database.C">func (Database) <a href="https://github.com/garyburd/go-mongo/blob/master/database.go#L76">C</a></h3>
+    <h3 id="Database.C">func (Database) <a href="https://github.com/garyburd/go-mongo/blob/master/database.go#L82">C</a></h3>
     <p><code>func (db Database) C(name string) Collection</code></p>
     <p>
 C returns the collection with name. This is a lightweight operation. The
 method does not check to see if the collection exists in the database.
 </p>
 
-    <h3 id="Database.Dereference">func (Database) <a href="https://github.com/garyburd/go-mongo/blob/master/database.go#L155">Dereference</a></h3>
+    <h3 id="Database.Dereference">func (Database) <a href="https://github.com/garyburd/go-mongo/blob/master/database.go#L171">Dereference</a></h3>
     <p><code>func (db Database) Dereference(ref DBRef, slaveOk bool, result interface{}) os.Error</code></p>
     <p>
 Deference fetches the document specified by a database reference.
 </p>
 
-    <h3 id="Database.LastError">func (Database) <a href="https://github.com/garyburd/go-mongo/blob/master/database.go#L114">LastError</a></h3>
+    <h3 id="Database.LastError">func (Database) <a href="https://github.com/garyburd/go-mongo/blob/master/database.go#L128">LastError</a></h3>
     <p><code>func (db Database) LastError(cmd interface{}) os.Error</code></p>
     <p>
 LastError returns the last error for the database using cmd. If cmd is nil,
 then the command {&#34;getLasetError&#34;: 1} is used to get the error.
 </p>
+<p>
+More information:
+</p>
+<pre><a href="http://www.mongodb.org/display/DOCS/Last+Error+Commands">http://www.mongodb.org/display/DOCS/Last+Error+Commands</a>
+</pre>
 
-    <h3 id="Database.Run">func (Database) <a href="https://github.com/garyburd/go-mongo/blob/master/database.go#L85">Run</a></h3>
+    <h3 id="Database.Run">func (Database) <a href="https://github.com/garyburd/go-mongo/blob/master/database.go#L95">Run</a></h3>
     <p><code>func (db Database) Run(cmd interface{}, result interface{}) os.Error</code></p>
     <p>
 Run runs the command cmd on the database.
 </p>
+<p>
+More information:
+</p>
+<pre><a href="http://www.mongodb.org/display/DOCS/Commands">http://www.mongodb.org/display/DOCS/Commands</a>
+</pre>
 
 
 <h2 id="DateTime">type DateTime</h2>
@@ -756,8 +802,8 @@ FindOptions specifies options for the Conn.Find method.
  // will fail if a shard is not available.
  PartialResults bool
 
- // Sets the number of documents to omit - starting from the first document
- // in the resulting dataset - when returning the result of the query.
+ // Skip specifies the number of documents the server should skip at the
+ // beginning of the result set.
  Skip int
 
  // Sets the number of documents to return. 
@@ -975,63 +1021,89 @@ Query represents a query to the database.
 
 
 
-    <h3 id="Query.BatchSize">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L82">BatchSize</a></h3>
+    <h3 id="Query.BatchSize">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L91">BatchSize</a></h3>
     <p><code>func (q *Query) BatchSize(batchSize int) *Query</code></p>
     <p>
 BatchSize sets the batch sized used for sending documents from the server to
 the client.
 </p>
 
-    <h3 id="Query.Count">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L115">Count</a></h3>
+    <h3 id="Query.Count">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L135">Count</a></h3>
     <p><code>func (q *Query) Count() (int64, os.Error)</code></p>
     <p>
 Count returns the number of documents that match the query. Limit and
 skip are considered in the count.
 </p>
 
-    <h3 id="Query.Cursor">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L171">Cursor</a></h3>
+    <h3 id="Query.Cursor">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L191">Cursor</a></h3>
     <p><code>func (q *Query) Cursor() (Cursor, os.Error)</code></p>
     <p>
 Cursor executes the query and returns a cursor over the results. Subsequent
 changes to the query object are ignored by the cursor.
 </p>
 
-    <h3 id="Query.Exhaust">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L103">Exhaust</a></h3>
+    <h3 id="Query.Exhaust">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L123">Exhaust</a></h3>
     <p><code>func (q *Query) Exhaust(exhaust bool) *Query</code></p>
     
-    <h3 id="Query.Explain">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L175">Explain</a></h3>
+    <h3 id="Query.Explain">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L195">Explain</a></h3>
     <p><code>func (q *Query) Explain(result interface{}) os.Error</code></p>
     
-    <h3 id="Query.Fields">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L88">Fields</a></h3>
+    <h3 id="Query.Fields">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L103">Fields</a></h3>
     <p><code>func (q *Query) Fields(fields interface{}) *Query</code></p>
     <p>
-Fields specifies the fields to include in returned documents.
+Fields limits the fields in the returned documents.  Fields contains one or
+more elements, each of which is the name of a field that should be returned,
+and the integer value 1.
 </p>
+<p>
+More information:
+</p>
+<pre><a href="http://www.mongodb.org/display/DOCS/Retrieving+a+Subset+of+Fields">http://www.mongodb.org/display/DOCS/Retrieving+a+Subset+of+Fields</a>
+</pre>
 
-    <h3 id="Query.Limit">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L69">Limit</a></h3>
+    <h3 id="Query.Limit">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L73">Limit</a></h3>
     <p><code>func (q *Query) Limit(limit int) *Query</code></p>
     <p>
 Limit specifies the number of documents to return from the query.
 </p>
+<p>
+More information:
+</p>
+<pre><a href="http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%7B%7Blimit%28%29%7D%7D">http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%7B%7Blimit%28%29%7D%7D</a>
+</pre>
 
-    <h3 id="Query.One">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L158">One</a></h3>
-    <p><code>func (q *Query) One(result interface{}) os.Error</code></p>
+    <h3 id="Query.One">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L178">One</a></h3>
+    <p><code>func (q *Query) One(output interface{}) os.Error</code></p>
     <p>
 One executes the query and returns the first result.
 </p>
 
-    <h3 id="Query.PartialResults">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L98">PartialResults</a></h3>
+    <h3 id="Query.PartialResults">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L118">PartialResults</a></h3>
     <p><code>func (q *Query) PartialResults(ok bool) *Query</code></p>
     
-    <h3 id="Query.Skip">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L75">Skip</a></h3>
+    <h3 id="Query.Skip">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L84">Skip</a></h3>
     <p><code>func (q *Query) Skip(skip int) *Query</code></p>
     <p>
-Skip specifies the number of documents to skip in the result set.
+Skip specifies the number of documents the server should skip at the
+beginning of the result set.
 </p>
+<p>
+More information:
+</p>
+<pre><a href="http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%7B%7Bskip%28%29%7D%7D">http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%7B%7Bskip%28%29%7D%7D</a>
+</pre>
 
-    <h3 id="Query.SlaveOk">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L93">SlaveOk</a></h3>
+    <h3 id="Query.SlaveOk">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L113">SlaveOk</a></h3>
     <p><code>func (q *Query) SlaveOk(slaveOk bool) *Query</code></p>
-    
+    <p>
+SlaveOk specifies if query can be routed to a slave.
+</p>
+<p>
+More information:
+</p>
+<pre><a href="http://www.mongodb.org/display/DOCS/Querying#Querying-slaveOk">http://www.mongodb.org/display/DOCS/Querying#Querying-slaveOk</a>
+</pre>
+
     <h3 id="Query.Sort">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L63">Sort</a></h3>
     <p><code>func (q *Query) Sort(sort interface{}) *Query</code></p>
     <p>
@@ -1040,7 +1112,7 @@ Sort specifies the sort order for the result. The order is specified by
 descending order.
 </p>
 
-    <h3 id="Query.Tailable">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L108">Tailable</a></h3>
+    <h3 id="Query.Tailable">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L128">Tailable</a></h3>
     <p><code>func (q *Query) Tailable(tailable bool) *Query</code></p>
     
 
