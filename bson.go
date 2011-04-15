@@ -252,7 +252,7 @@ type structInfo struct {
 	fields D
 }
 
-func compileStructInfo(t *reflect.StructType, depth map[string]int, index []int, si *structInfo) {
+func compileStructInfo(t reflect.Type, depth map[string]int, index []int, si *structInfo) {
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 		switch {
@@ -261,8 +261,8 @@ func compileStructInfo(t *reflect.StructType, depth map[string]int, index []int,
 		case f.Anonymous:
 			// TODO: Handle pointers. Requires change to decoder and 
 			// protection against infinite recursion.
-			if t, ok := f.Type.(*reflect.StructType); ok {
-				compileStructInfo(t, depth, append(index, i), si)
+			if f.Type.Kind() == reflect.Struct {
+				compileStructInfo(f.Type, depth, append(index, i), si)
 			}
 		default:
 			fi := &fieldInfo{name: f.Name}
@@ -310,11 +310,11 @@ func compileStructInfo(t *reflect.StructType, depth map[string]int, index []int,
 
 var (
 	structInfoMutex  sync.RWMutex
-	structInfoCache  = make(map[*reflect.StructType]*structInfo)
+	structInfoCache  = make(map[reflect.Type]*structInfo)
 	defaultFieldInfo = &fieldInfo{}
 )
 
-func structInfoForType(t *reflect.StructType) *structInfo {
+func structInfoForType(t reflect.Type) *structInfo {
 
 	structInfoMutex.RLock()
 	si, found := structInfoCache[t]
@@ -352,6 +352,6 @@ func structInfoForType(t *reflect.StructType) *structInfo {
 
 // StructFields returns a MongoDB field specification for the given struct
 // type.
-func StructFields(t *reflect.StructType) interface{} {
+func StructFields(t reflect.Type) interface{} {
 	return structInfoForType(t).fields
 }

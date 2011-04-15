@@ -134,6 +134,10 @@ func IndexName(keys D) string {
 }
 
 // IndexOptions specifies options for the collection CreateIndex method.
+//
+// More information:
+//
+//  http://www.mongodb.org/display/DOCS/Indexes
 type IndexOptions struct {
 	// Custom name for this index. If none specified, then a name will be generated.
 	Name string "name"
@@ -143,6 +147,17 @@ type IndexOptions struct {
 
 	// Should duplicates be dropped when creating a unique index?
 	DropDups bool "dropDups/c"
+
+	// Build index in background.
+	Background bool "background/c"
+
+	// Do not index documents with missing key fields.
+	Sparse bool "sparse/c"
+
+	// Geospatial options
+	Min  interface{} "min"
+	Max  interface{} "max"
+	Bits int         "bits/c"
 }
 
 // CreateIndex creates an index on keys.

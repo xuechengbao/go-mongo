@@ -320,9 +320,9 @@ func TestDecodeStruct(t *testing.T) {
 		if bt.psv == nil {
 			continue
 		}
-		pt := reflect.NewValue(bt.psv).Type().(*reflect.PtrType)
-		psv := reflect.MakeZero(pt).(*reflect.PtrValue)
-		psv.PointTo(reflect.MakeZero(pt.Elem()))
+		pt := reflect.NewValue(bt.psv).Type()
+		psv := reflect.Zero(pt)
+		psv.Set(reflect.Zero(pt.Elem()).Addr())
 		err := Decode([]byte(bt.data), psv.Interface())
 		sv := psv.Elem().Interface()
 		if err != nil {
@@ -434,7 +434,7 @@ var structFieldsTests = []struct {
 
 func TestStructFields(t *testing.T) {
 	for _, tt := range structFieldsTests {
-		fields := StructFields(reflect.NewValue(tt.v).Type().(*reflect.StructType))
+		fields := StructFields(reflect.NewValue(tt.v).Type())
 		m := make(M)
 		for _, di := range fields.(D) {
 			m[di.Key] = di.Value

@@ -38,11 +38,6 @@ func (e *EncodeTypeError) String() string {
 	return "bson: unsupported type: " + e.Type.String()
 }
 
-type interfaceOrPtrValue interface {
-	IsNil() bool
-	Elem() reflect.Value
-}
-
 type encodeState struct {
 	buffer
 }
@@ -108,8 +103,8 @@ func Encode(buf []byte, doc interface{}) (result []byte, err os.Error) {
 	}()
 
 	v := reflect.NewValue(doc)
-	if pv, ok := v.(interfaceOrPtrValue); ok {
-		v = pv.Elem()
+	if kind := v.Kind(); kind == reflect.Interface || kind == reflect.Ptr {
+		v = v.Elem()
 	}
 
 	e := encodeState{buffer: buf}
@@ -125,10 +120,10 @@ func Encode(buf []byte, doc interface{}) (result []byte, err os.Error) {
 		}
 		e.Write(rd.Data)
 	default:
-		switch v := v.(type) {
-		case *reflect.StructValue:
+		switch v.Kind() {
+		case reflect.Struct:
 			e.writeStruct(v)
-		case *reflect.MapValue:
+		case reflect.Map:
 			e.writeMap(v, true)
 		default:
 			return nil, &EncodeTypeError{v.Type()}
@@ -157,9 +152,9 @@ func (e *encodeState) writeKindName(kind int, name string) {
 	e.WriteCString(name)
 }
 
-func (e *encodeState) writeStruct(v *reflect.StructValue) {
+func (e *encodeState) writeStruct(v reflect.Value) {
 	offset := e.beginDoc()
-	si := structInfoForType(v.Type().(*reflect.StructType))
+	si := structInfoForType(v.Type())
 	for _, fi := range si.l {
 		e.encodeValue(fi.name, fi, v.FieldByIndex(fi.index))
 	}
@@ -167,26 +162,26 @@ func (e *encodeState) writeStruct(v *reflect.StructValue) {
 	e.endDoc(offset)
 }
 
-func (e *encodeState) writeMap(v *reflect.MapValue, topLevel bool) {
+func (e *encodeState) writeMap(v reflect.Value, topLevel bool) {
 	if v.IsNil() {
 		return
 	}
-	if _, ok := v.Type().(*reflect.MapType).Key().(*reflect.StringType); !ok {
+	if v.Type().Key().Kind() != reflect.String {
 		e.abort(&EncodeTypeError{v.Type()})
 	}
 	offset := e.beginDoc()
 	skipId := false
 	if topLevel {
-		idValue := v.Elem(idKey)
-		if idValue != nil {
+		idValue := v.MapIndex(idKey)
+		if idValue.IsValid() {
 			skipId = true
 			e.encodeValue("_id", defaultFieldInfo, idValue)
 		}
 	}
-	for _, k := range v.Keys() {
-		sk := k.(*reflect.StringValue).Get()
+	for _, k := range v.MapKeys() {
+		sk := k.String()
 		if !skipId || sk != "_id" {
-			e.encodeValue(sk, defaultFieldInfo, v.Elem(k))
+			e.encodeValue(sk, defaultFieldInfo, v.MapIndex(k))
 		}
 	}
 	e.WriteByte(0)
@@ -211,23 +206,23 @@ func (e *encodeState) writeDoc(v Doc) {
 	e.endDoc(offset)
 }
 
-func (e *encodeState) encodeValue(name string, fi *fieldInfo, value reflect.Value) {
-	if value == nil {
+func (e *encodeState) encodeValue(name string, fi *fieldInfo, v reflect.Value) {
+	if !v.IsValid() {
 		return
 	}
-	t := value.Type()
+	t := v.Type()
 	encoder, found := typeEncoder[t]
 	if !found {
 		encoder, found = kindEncoder[t.Kind()]
 		if !found {
-			e.abort(&EncodeTypeError{value.Type()})
+			e.abort(&EncodeTypeError{t})
 		}
 	}
-	encoder(e, name, fi, value)
+	encoder(e, name, fi, v)
 }
 
-func encodeBool(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
-	b := value.(*reflect.BoolValue).Get()
+func encodeBool(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
+	b := v.Bool()
 	if b == false && fi.conditional {
 		return
 	}
@@ -239,8 +234,8 @@ func encodeBool(e *encodeState, name string, fi *fieldInfo, value reflect.Value)
 	}
 }
 
-func encodeInt32(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
-	i := value.(*reflect.IntValue).Get()
+func encodeInt32(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
+	i := v.Int()
 	if i == 0 && fi.conditional {
 		return
 	}
@@ -248,8 +243,8 @@ func encodeInt32(e *encodeState, name string, fi *fieldInfo, value reflect.Value
 	e.WriteUint32(uint32(i))
 }
 
-func encodeUint32(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
-	i := value.(*reflect.UintValue).Get()
+func encodeUint32(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
+	i := v.Uint()
 	if i == 0 && fi.conditional {
 		return
 	}
@@ -257,8 +252,8 @@ func encodeUint32(e *encodeState, name string, fi *fieldInfo, value reflect.Valu
 	e.WriteUint32(uint32(i))
 }
 
-func encodeInt64(e *encodeState, kind int, name string, fi *fieldInfo, value reflect.Value) {
-	i := value.(*reflect.IntValue).Get()
+func encodeInt64(e *encodeState, kind int, name string, fi *fieldInfo, v reflect.Value) {
+	i := v.Int()
 	if i == 0 && fi.conditional {
 		return
 	}
@@ -266,8 +261,8 @@ func encodeInt64(e *encodeState, kind int, name string, fi *fieldInfo, value ref
 	e.WriteUint64(uint64(i))
 }
 
-func encodeUint64(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
-	i := value.(*reflect.UintValue).Get()
+func encodeUint64(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
+	i := v.Uint()
 	if i == 0 && fi.conditional {
 		return
 	}
@@ -275,8 +270,8 @@ func encodeUint64(e *encodeState, name string, fi *fieldInfo, value reflect.Valu
 	e.WriteUint64(i)
 }
 
-func encodeFloat(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
-	f := value.(*reflect.FloatValue).Get()
+func encodeFloat(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
+	f := v.Float()
 	if f == 0 && fi.conditional {
 		return
 	}
@@ -284,8 +279,8 @@ func encodeFloat(e *encodeState, name string, fi *fieldInfo, value reflect.Value
 	e.WriteUint64(math.Float64bits(f))
 }
 
-func encodeString(e *encodeState, kind int, name string, fi *fieldInfo, value reflect.Value) {
-	s := value.(*reflect.StringValue).Get()
+func encodeString(e *encodeState, kind int, name string, fi *fieldInfo, v reflect.Value) {
+	s := v.String()
 	if s == "" && fi.conditional {
 		return
 	}
@@ -294,8 +289,8 @@ func encodeString(e *encodeState, kind int, name string, fi *fieldInfo, value re
 	e.WriteCString(s)
 }
 
-func encodeRegexp(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
-	r := value.Interface().(Regexp)
+func encodeRegexp(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
+	r := v.Interface().(Regexp)
 	if r.Pattern == "" && fi.conditional {
 		return
 	}
@@ -304,8 +299,8 @@ func encodeRegexp(e *encodeState, name string, fi *fieldInfo, value reflect.Valu
 	e.WriteCString(r.Options)
 }
 
-func encodeObjectId(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
-	oid := value.Interface().(ObjectId)
+func encodeObjectId(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
+	oid := v.Interface().(ObjectId)
 	if oid == "" {
 		return
 	}
@@ -316,8 +311,8 @@ func encodeObjectId(e *encodeState, name string, fi *fieldInfo, value reflect.Va
 	copy(e.Next(12), oid)
 }
 
-func encodeBSONData(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
-	bd := value.Interface().(BSONData)
+func encodeBSONData(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
+	bd := v.Interface().(BSONData)
 	if bd.Kind == 0 {
 		return
 	}
@@ -325,8 +320,8 @@ func encodeBSONData(e *encodeState, name string, fi *fieldInfo, value reflect.Va
 	e.Write(bd.Data)
 }
 
-func encodeCodeWithScope(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
-	c := value.Interface().(CodeWithScope)
+func encodeCodeWithScope(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
+	c := v.Interface().(CodeWithScope)
 	if c.Code == "" && c.Scope == nil && fi.conditional {
 		return
 	}
@@ -343,12 +338,12 @@ func encodeCodeWithScope(e *encodeState, name string, fi *fieldInfo, value refle
 	e.endDoc(offset)
 }
 
-func encodeMinMax(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
-	i := value.Interface().(MinMax)
+func encodeMinMax(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
+	i := v.Interface().(MinMax)
 	if i == 0 && fi.conditional {
 		return
 	}
-	switch value.Interface().(MinMax) {
+	switch v.Interface().(MinMax) {
 	case 1:
 		e.writeKindName(kindMaxValue, name)
 	case -1:
@@ -358,13 +353,12 @@ func encodeMinMax(e *encodeState, name string, fi *fieldInfo, value reflect.Valu
 	}
 }
 
-func encodeStruct(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
+func encodeStruct(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
 	e.writeKindName(kindDocument, name)
-	e.writeStruct(value.(*reflect.StructValue))
+	e.writeStruct(v)
 }
 
-func encodeMap(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
-	v := value.(*reflect.MapValue)
+func encodeMap(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
 	if v.IsNil() {
 		return
 	}
@@ -372,26 +366,26 @@ func encodeMap(e *encodeState, name string, fi *fieldInfo, value reflect.Value) 
 	e.writeMap(v, false)
 }
 
-func encodeD(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
-	v := value.Interface().(D)
-	if v == nil {
+func encodeD(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
+	d := v.Interface().(D)
+	if d == nil {
 		return
 	}
 	e.writeKindName(kindDocument, name)
-	e.writeD(v)
+	e.writeD(d)
 }
 
-func encodeDoc(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
-	v := value.Interface().(Doc)
-	if v == nil {
+func encodeDoc(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
+	d := v.Interface().(Doc)
+	if d == nil {
 		return
 	}
 	e.writeKindName(kindDocument, name)
-	e.writeDoc(v)
+	e.writeDoc(d)
 }
 
-func encodeByteSlice(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
-	b := value.Interface().([]byte)
+func encodeByteSlice(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
+	b := v.Interface().([]byte)
 	if b == nil {
 		return
 	}
@@ -401,8 +395,7 @@ func encodeByteSlice(e *encodeState, name string, fi *fieldInfo, value reflect.V
 	e.Write(b)
 }
 
-func encodeSlice(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
-	v := value.(*reflect.SliceValue)
+func encodeSlice(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
 	if v.IsNil() {
 		return
 	}
@@ -410,26 +403,24 @@ func encodeSlice(e *encodeState, name string, fi *fieldInfo, value reflect.Value
 	offset := e.beginDoc()
 	n := v.Len()
 	for i := 0; i < n; i++ {
-		e.encodeValue(strconv.Itoa(i), defaultFieldInfo, v.Elem(i))
+		e.encodeValue(strconv.Itoa(i), defaultFieldInfo, v.Index(i))
 	}
 	e.WriteByte(0)
 	e.endDoc(offset)
 }
 
-func encodeArray(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
-	v := value.(*reflect.ArrayValue)
+func encodeArray(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
 	e.writeKindName(kindArray, name)
 	offset := e.beginDoc()
 	n := v.Len()
 	for i := 0; i < n; i++ {
-		e.encodeValue(strconv.Itoa(i), defaultFieldInfo, v.Elem(i))
+		e.encodeValue(strconv.Itoa(i), defaultFieldInfo, v.Index(i))
 	}
 	e.WriteByte(0)
 	e.endDoc(offset)
 }
 
-func encodeInterfaceOrPtr(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
-	v := value.(interfaceOrPtrValue)
+func encodeInterfaceOrPtr(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
 	if v.IsNil() {
 		return
 	} else {
