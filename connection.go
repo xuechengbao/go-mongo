@@ -261,10 +261,10 @@ func (c *connection) Find(namespace string, query interface{}, options *FindOpti
 }
 
 func (c *connection) getMore(r *cursor) os.Error {
-	r.requestId = c.nextId()
+	requestId := c.nextId()
 	b := buffer(c.buf[:0])
 	b.Next(4)                   // placeholder for message length
-	b.WriteUint32(r.requestId)  // requestId
+	b.WriteUint32(requestId)    // requestId
 	b.WriteUint32(0)            // responseTo
 	b.WriteUint32(2005)         // opCode
 	b.WriteUint32(0)            // reserved
@@ -274,7 +274,8 @@ func (c *connection) getMore(r *cursor) os.Error {
 	if err := c.send(b); err != nil {
 		return err
 	}
-	c.cursors[r.requestId] = r
+	r.requestId = requestId
+	c.cursors[requestId] = r
 	return nil
 }
 
@@ -429,6 +430,7 @@ func (r *cursor) fill() os.Error {
 		if r.resp[0].count > 0 {
 			return nil
 		}
+		r.resp[0].data = nil
 		r.resp = r.resp[1:]
 	}
 
@@ -475,6 +477,7 @@ func (r *cursor) fill() os.Error {
 	}
 
 	if r.resp[0].count == 0 {
+		r.resp[0].data = nil
 		r.resp = r.resp[1:]
 	}
 
