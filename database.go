@@ -157,11 +157,11 @@ func (db Database) LastError(cmd interface{}) os.Error {
 //
 // http://www.mongodb.org/display/DOCS/Database+References 
 type DBRef struct {
-	// The target document's id.
-	Id ObjectId "$id"
-
 	// The target document's collection.
 	Collection string "$ref"
+
+	// The target document's id.
+	Id ObjectId "$id"
 
 	// The target document's database (optional).
 	Database string "$db/c"
