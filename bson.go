@@ -252,6 +252,10 @@ type structInfo struct {
 	fields D
 }
 
+func (si *structInfo) FieldInfo(name []byte) *fieldInfo {
+	return si.m[string(name)]
+}
+
 func compileStructInfo(t reflect.Type, depth map[string]int, index []int, si *structInfo) {
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)

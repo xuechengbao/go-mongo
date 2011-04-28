@@ -146,20 +146,17 @@ func (d *decodeState) endDoc(offset int) {
 }
 
 func (d *decodeState) scanSlice(n int) []byte {
-	if n+d.offset > len(d.data) {
+	offset := d.offset + n
+	if offset > len(d.data) {
 		d.abort(ErrEOD)
 	}
-	p := d.data[d.offset : d.offset+n]
-	d.offset += n
+	p := d.data[d.offset:offset]
+	d.offset = offset
 	return p
 }
 
 func (d *decodeState) scanKindName() (int, []byte) {
-	if d.offset >= len(d.data) {
-		d.abort(ErrEOD)
-	}
-	kind := int(d.data[d.offset])
-	d.offset += 1
+	kind := int(d.scanSlice(1)[0])
 	if kind == 0 {
 		return 0, nil
 	}
@@ -486,7 +483,7 @@ func decodeStruct(d *decodeState, kind int, v reflect.Value) {
 		if kind == kindNull {
 			continue
 		}
-		if fi, ok := si.m[string(name)]; ok {
+		if fi := si.FieldInfo(name); fi != nil {
 			d.decodeValue(kind, v.FieldByIndex(fi.index))
 		} else {
 			d.skipValue(kind)
