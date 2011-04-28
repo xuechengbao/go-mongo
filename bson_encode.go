@@ -18,15 +18,14 @@ import (
 	"math"
 	"os"
 	"reflect"
-	"runtime"
 	"strconv"
 )
 
 var (
-	typeD        = reflect.Typeof(D{})
-	typeDoc      = reflect.Typeof(Doc{})
-	typeBSONData = reflect.Typeof(BSONData{})
-	idKey        = reflect.NewValue("_id")
+	typeD        = reflect.TypeOf(D{})
+	typeDoc      = reflect.TypeOf(Doc{})
+	typeBSONData = reflect.TypeOf(BSONData{})
+	idKey        = reflect.ValueOf("_id")
 )
 
 // EncodeTypeError is the error indicating that Encode could not encode an input type.
@@ -93,16 +92,9 @@ type encodeState struct {
 // BSON cannot represent cyclic data structure and Encode does not handle them.
 // Passing cyclic structures to Encode will result in an infinite recursion.
 func Encode(buf []byte, doc interface{}) (result []byte, err os.Error) {
-	defer func() {
-		if r := recover(); r != nil {
-			if _, ok := r.(runtime.Error); ok {
-				panic(r)
-			}
-			err = r.(os.Error)
-		}
-	}()
+	defer handleAbort(&err)
 
-	v := reflect.NewValue(doc)
+	v := reflect.ValueOf(doc)
 	if kind := v.Kind(); kind == reflect.Interface || kind == reflect.Ptr {
 		v = v.Elem()
 	}
@@ -130,10 +122,6 @@ func Encode(buf []byte, doc interface{}) (result []byte, err os.Error) {
 		}
 	}
 	return e.buffer, nil
-}
-
-func (e *encodeState) abort(err os.Error) {
-	panic(err)
 }
 
 func (e *encodeState) beginDoc() (offset int) {
@@ -167,7 +155,7 @@ func (e *encodeState) writeMap(v reflect.Value, topLevel bool) {
 		return
 	}
 	if v.Type().Key().Kind() != reflect.String {
-		e.abort(&EncodeTypeError{v.Type()})
+		abort(&EncodeTypeError{v.Type()})
 	}
 	offset := e.beginDoc()
 	skipId := false
@@ -191,7 +179,7 @@ func (e *encodeState) writeMap(v reflect.Value, topLevel bool) {
 func (e *encodeState) writeD(v D) {
 	offset := e.beginDoc()
 	for _, kv := range v {
-		e.encodeValue(kv.Key, defaultFieldInfo, reflect.NewValue(kv.Value))
+		e.encodeValue(kv.Key, defaultFieldInfo, reflect.ValueOf(kv.Value))
 	}
 	e.WriteByte(0)
 	e.endDoc(offset)
@@ -200,7 +188,7 @@ func (e *encodeState) writeD(v D) {
 func (e *encodeState) writeDoc(v Doc) {
 	offset := e.beginDoc()
 	for _, kv := range v {
-		e.encodeValue(kv.Key, defaultFieldInfo, reflect.NewValue(kv.Value))
+		e.encodeValue(kv.Key, defaultFieldInfo, reflect.ValueOf(kv.Value))
 	}
 	e.WriteByte(0)
 	e.endDoc(offset)
@@ -215,7 +203,7 @@ func (e *encodeState) encodeValue(name string, fi *fieldInfo, v reflect.Value) {
 	if !found {
 		encoder, found = kindEncoder[t.Kind()]
 		if !found {
-			e.abort(&EncodeTypeError{t})
+			abort(&EncodeTypeError{t})
 		}
 	}
 	encoder(e, name, fi, v)
@@ -305,7 +293,7 @@ func encodeObjectId(e *encodeState, name string, fi *fieldInfo, v reflect.Value)
 		return
 	}
 	if len(oid) != 12 {
-		e.abort(os.NewError("bson: object id length != 12"))
+		abort(os.NewError("bson: object id length != 12"))
 	}
 	e.writeKindName(kindObjectId, name)
 	copy(e.Next(12), oid)
@@ -331,7 +319,7 @@ func encodeCodeWithScope(e *encodeState, name string, fi *fieldInfo, v reflect.V
 	e.WriteCString(c.Code)
 	scopeOffset := e.beginDoc()
 	for k, v := range c.Scope {
-		e.encodeValue(k, defaultFieldInfo, reflect.NewValue(v))
+		e.encodeValue(k, defaultFieldInfo, reflect.ValueOf(v))
 	}
 	e.WriteByte(0)
 	e.endDoc(scopeOffset)
@@ -349,7 +337,7 @@ func encodeMinMax(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
 	case -1:
 		e.writeKindName(kindMinValue, name)
 	default:
-		e.abort(os.NewError("bson: unknown MinMax value"))
+		abort(os.NewError("bson: unknown MinMax value"))
 	}
 }
 
@@ -463,22 +451,22 @@ func init() {
 		typeDoc:      encodeDoc,
 		typeD:        encodeD,
 		typeBSONData: encodeBSONData,
-		reflect.Typeof(Code("")): func(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
+		reflect.TypeOf(Code("")): func(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
 			encodeString(e, kindCode, name, fi, value)
 		},
-		reflect.Typeof(CodeWithScope{}): encodeCodeWithScope,
-		reflect.Typeof(DateTime(0)): func(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
+		reflect.TypeOf(CodeWithScope{}): encodeCodeWithScope,
+		reflect.TypeOf(DateTime(0)): func(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
 			encodeInt64(e, kindDateTime, name, fi, value)
 		},
-		reflect.Typeof(MinMax(0)):    encodeMinMax,
-		reflect.Typeof(ObjectId("")): encodeObjectId,
-		reflect.Typeof(Regexp{}):     encodeRegexp,
-		reflect.Typeof(Symbol("")): func(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
+		reflect.TypeOf(MinMax(0)):    encodeMinMax,
+		reflect.TypeOf(ObjectId("")): encodeObjectId,
+		reflect.TypeOf(Regexp{}):     encodeRegexp,
+		reflect.TypeOf(Symbol("")): func(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
 			encodeString(e, kindSymbol, name, fi, value)
 		},
-		reflect.Typeof(Timestamp(0)): func(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
+		reflect.TypeOf(Timestamp(0)): func(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
 			encodeInt64(e, kindTimestamp, name, fi, value)
 		},
-		reflect.Typeof([]byte{}): encodeByteSlice,
+		reflect.TypeOf([]byte{}): encodeByteSlice,
 	}
 }

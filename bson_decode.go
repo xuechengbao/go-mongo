@@ -19,7 +19,6 @@ import (
 	"math"
 	"os"
 	"reflect"
-	"runtime"
 )
 
 var ErrEOD = os.NewError("bson: unexpected end of data when parsing BSON")
@@ -73,18 +72,10 @@ func (e *DecodeTypeError) String() string {
 // To decode a BSON value into a nil interface value, the first type listed in
 // the right hand column of the table above is used.
 func Decode(data []byte, v interface{}) (err os.Error) {
-	defer func() {
-		if r := recover(); r != nil {
-			if _, ok := r.(runtime.Error); ok {
-				panic(r)
-			}
-			err = r.(os.Error)
-		}
-	}()
-
+	defer handleAbort(&err)
 	value, ok := v.(reflect.Value)
 	if !ok {
-		value = reflect.NewValue(v)
+		value = reflect.ValueOf(v)
 		switch value.Kind() {
 		case reflect.Map:
 			if value.IsNil() {
@@ -112,11 +103,6 @@ type decodeState struct {
 	savedError os.Error
 }
 
-// abort by panicking with err.
-func (d *decodeState) abort(err os.Error) {
-	panic(err)
-}
-
 // saveError saves the first err it is called with, for reporting at the end of
 // Decode.
 func (d *decodeState) saveError(err os.Error) {
@@ -141,14 +127,14 @@ func (d *decodeState) beginDoc() int {
 
 func (d *decodeState) endDoc(offset int) {
 	if d.offset != offset {
-		d.abort(os.NewError("bson: doc length wrong"))
+		abort(os.NewError("bson: doc length wrong"))
 	}
 }
 
 func (d *decodeState) scanSlice(n int) []byte {
 	offset := d.offset + n
 	if offset > len(d.data) {
-		d.abort(ErrEOD)
+		abort(ErrEOD)
 	}
 	p := d.data[d.offset:offset]
 	d.offset = offset
@@ -162,7 +148,7 @@ func (d *decodeState) scanKindName() (int, []byte) {
 	}
 	n := bytes.IndexByte(d.data[d.offset:], 0)
 	if n < 0 {
-		d.abort(ErrEOD)
+		abort(ErrEOD)
 	}
 	p := d.data[d.offset : d.offset+n]
 	d.offset = d.offset + n + 1
@@ -224,11 +210,15 @@ func (d *decodeState) decodeValue(kind int, v reflect.Value) {
 // non-pointer.  
 func (d *decodeState) indirect(v reflect.Value) reflect.Value {
 	for {
+		//if v.Kind() == reflect.Interface && !v.IsNil() {
+		//		v = v.Elem()
+		//		continue
+		//}
 		if v.Kind() != reflect.Ptr {
 			break
 		}
 		if v.IsNil() {
-			v.Set(reflect.Zero(v.Type().Elem()).Addr())
+			v.Set(reflect.New(v.Type().Elem()))
 		}
 		v = v.Elem()
 	}
@@ -324,7 +314,7 @@ func decodeBSONData(d *decodeState, kind int, v reflect.Value) {
 	d.skipValue(kind)
 	bd := BSONData{Kind: kind, Data: make([]byte, d.offset-start)}
 	copy(bd.Data, d.data[start:d.offset])
-	v.Set(reflect.NewValue(bd))
+	v.Set(reflect.ValueOf(bd))
 }
 
 func decodeByteSlice(d *decodeState, kind int, v reflect.Value) {
@@ -341,7 +331,7 @@ func decodeByteSlice(d *decodeState, kind int, v reflect.Value) {
 	} else {
 		v.SetLen(len(p))
 	}
-	reflect.Copy(v, reflect.NewValue(p))
+	reflect.Copy(v, reflect.ValueOf(p))
 }
 
 func decodeBool(d *decodeState, kind int, v reflect.Value) {
@@ -381,15 +371,25 @@ func decodeMapStringInterface(d *decodeState, kind int, v reflect.Value) {
 		d.saveErrorAndSkip(kind, v.Type())
 	}
 	if v.IsNil() {
-		t := v.Type()
-		v.Set(reflect.MakeMap(t))
+		v.Set(reflect.MakeMap(v.Type()))
 	}
-	m := v.Interface().(map[string]interface{})
+
+	var m map[string]interface{}
+	switch mm := v.Interface().(type) {
+	case map[string]interface{}:
+		m = mm
+	case M:
+		m = (map[string]interface{})(mm)
+	}
+
 	offset := d.beginDoc()
 	for {
 		kind, name := d.scanKindName()
 		if kind == 0 {
 			break
+		}
+		if kind == kindNull {
+			continue
 		}
 		m[string(name)] = d.decodeValueInterface(kind)
 	}
@@ -405,15 +405,19 @@ func decodeMap(d *decodeState, kind int, v reflect.Value) {
 	if v.IsNil() {
 		v.Set(reflect.MakeMap(t))
 	}
+	subv := reflect.New(t.Elem()).Elem()
 	offset := d.beginDoc()
 	for {
 		kind, name := d.scanKindName()
 		if kind == 0 {
 			break
 		}
-		subv := reflect.Zero(t.Elem())
+		if kind == kindNull {
+			continue
+		}
+		subv.Set(reflect.Zero(t.Elem()))
 		d.decodeValue(kind, subv)
-		v.SetMapIndex(reflect.NewValue(string(name)), subv)
+		v.SetMapIndex(reflect.ValueOf(string(name)), subv)
 	}
 	d.endDoc(offset)
 }
@@ -493,7 +497,7 @@ func decodeStruct(d *decodeState, kind int, v reflect.Value) {
 }
 
 func decodeInterface(d *decodeState, kind int, v reflect.Value) {
-	v.Set(reflect.NewValue(d.decodeValueInterface(kind)))
+	v.Set(reflect.ValueOf(d.decodeValueInterface(kind)))
 }
 
 func (d *decodeState) decodeValueInterface(kind int) interface{} {
@@ -552,7 +556,7 @@ func (d *decodeState) decodeValueInterface(kind int) interface{} {
 	case kindMaxValue:
 		return MaxValue
 	default:
-		d.abort(&DecodeTypeError{kind})
+		abort(&DecodeTypeError{kind})
 	}
 	return nil
 }
@@ -579,7 +583,7 @@ func (d *decodeState) skipValue(kind int) {
 	case kindMinValue, kindMaxValue, kindNull:
 		d.offset += 0
 	default:
-		d.abort(&DecodeTypeError{kind})
+		abort(&DecodeTypeError{kind})
 	}
 }
 
@@ -604,13 +608,14 @@ func init() {
 		reflect.Array:     decodeArray,
 	}
 	typeDecoder = map[reflect.Type]decoderFunc{
-		reflect.Typeof(BSONData{}):                   decodeBSONData,
-		reflect.Typeof(DateTime(0)):                  decodeDateTime,
-		reflect.Typeof(MinMax(0)):                    decodeMinMax,
-		reflect.Typeof(ObjectId("")):                 decodeObjectId,
-		reflect.Typeof(Symbol("")):                   decodeString,
-		reflect.Typeof(Timestamp(0)):                 decodeTimestamp,
-		reflect.Typeof([]byte{}):                     decodeByteSlice,
-		reflect.Typeof(make(map[string]interface{})): decodeMapStringInterface,
+		reflect.TypeOf(BSONData{}):                   decodeBSONData,
+		reflect.TypeOf(DateTime(0)):                  decodeDateTime,
+		reflect.TypeOf(MinMax(0)):                    decodeMinMax,
+		reflect.TypeOf(ObjectId("")):                 decodeObjectId,
+		reflect.TypeOf(Symbol("")):                   decodeString,
+		reflect.TypeOf(Timestamp(0)):                 decodeTimestamp,
+		reflect.TypeOf([]byte{}):                     decodeByteSlice,
+		reflect.TypeOf(make(map[string]interface{})): decodeMapStringInterface,
+		reflect.TypeOf(M{}):                          decodeMapStringInterface,
 	}
 }

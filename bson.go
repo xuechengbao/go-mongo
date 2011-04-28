@@ -359,3 +359,17 @@ func structInfoForType(t reflect.Type) *structInfo {
 func StructFields(t reflect.Type) interface{} {
 	return structInfoForType(t).fields
 }
+
+type aborted struct{ err os.Error }
+
+func abort(err os.Error) { panic(aborted{err}) }
+
+func handleAbort(err *os.Error) {
+	if r := recover(); r != nil {
+		if a, ok := r.(aborted); ok {
+			*err = a.err
+		} else {
+			panic(r)
+		}
+	}
+}
