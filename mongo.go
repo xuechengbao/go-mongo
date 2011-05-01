@@ -69,8 +69,8 @@ type FindOptions struct {
 	AwaitData bool
 
 	// Stream the data down from the server full blast. Normally the server
-	// waits for a "get more" message before sending a chunk of data to the
-	// client.  With this option set, the server sends chunks of data without
+	// waits for a "get more" message before sending a batch of data to the
+	// client. With this option set, the server sends batches of data without
 	// waiting for the "get more" messages. 
 	Exhaust bool
 

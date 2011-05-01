@@ -58,10 +58,21 @@ type QuerySpec struct {
 
 
 // Sort specifies the sort order for the result. The order is specified by
-// (key, direction) pairs. The direction is 1 for ascending order and -1 for
+// (key, direction) pairs. Direction is 1 for ascending order and -1 for
 // descending order.
 func (q *Query) Sort(sort interface{}) *Query {
 	q.Spec.Sort = sort
+	return q
+}
+
+// Hint specifies an index hint. The index is specified by (key, direction)
+// pairs. Direction is 1 for ascending order and -1 for descending order.
+//
+// More information:
+//
+//  http://www.mongodb.org/display/DOCS/Optimization#Optimization-Hint
+func (q *Query) Hint(hint interface{}) *Query {
+	q.Spec.Hint = hint
 	return q
 }
 
@@ -93,7 +104,7 @@ func (q *Query) BatchSize(batchSize int) *Query {
 	return q
 }
 
-// Fields limits the fields in the returned documents.  Fields contains one or
+// Fields limits the fields in the returned documents. Fields contains one or
 // more elements, each of which is the name of a field that should be returned,
 // and the integer value 1. 
 //
@@ -115,16 +126,28 @@ func (q *Query) SlaveOk(slaveOk bool) *Query {
 	return q
 }
 
+// PartialResults specifies if mongos can reply with partial results when a
+// shard is missing.
 func (q *Query) PartialResults(ok bool) *Query {
 	q.Options.PartialResults = ok
 	return q
 }
 
+// Exhaust specifies if the server should stream data to the client full blast.
+// Normally the server waits for a "get more" message before sending a batch of
+// data to the client.  With this option set, the server sends batches of data
+// without waiting for the "get more" messages. 
 func (q *Query) Exhaust(exhaust bool) *Query {
 	q.Options.Exhaust = exhaust
 	return q
 }
 
+// Tailable specifies if the server should not close the cursor when no more
+// data is available.
+// 
+// More informatoin:
+//
+//  http://www.mongodb.org/display/DOCS/Tailable+Cursors
 func (q *Query) Tailable(tailable bool) *Query {
 	q.Options.Tailable = tailable
 	return q
@@ -192,6 +215,11 @@ func (q *Query) Cursor() (Cursor, os.Error) {
 	return q.Conn.Find(q.Namespace, q.simplifyQuery(), &q.Options)
 }
 
+// Explain returns an explanation of how the server will execute the query.
+//
+// More information:
+//
+//  http://www.mongodb.org/display/DOCS/Optimization#Optimization-Explain
 func (q *Query) Explain(result interface{}) os.Error {
 	spec := q.Spec
 	spec.Explain = true
