@@ -117,6 +117,7 @@
     <li><a href="#Query.Exhaust">func (*Query) Exhaust</a>
     <li><a href="#Query.Explain">func (*Query) Explain</a>
     <li><a href="#Query.Fields">func (*Query) Fields</a>
+    <li><a href="#Query.Hint">func (*Query) Hint</a>
     <li><a href="#Query.Limit">func (*Query) Limit</a>
     <li><a href="#Query.One">func (*Query) One</a>
     <li><a href="#Query.PartialResults">func (*Query) PartialResults</a>
@@ -181,7 +182,7 @@ var ErrEOD = os.NewError(&#34;bson: unexpected end of data when parsing BSON&#34
 Count is deprected. Use Collection{Conn: conn, Namespace:namespace}.Find(query).Count() instead.
 </p>
 
-<h2 id="Decode">func <a href="https://github.com/garyburd/go-mongo/blob/master/bson_decode.go#L75">Decode</a></h2>
+<h2 id="Decode">func <a href="https://github.com/garyburd/go-mongo/blob/master/bson_decode.go#L74">Decode</a></h2>
 <p><code>func Decode(data []byte, v interface{}) (err os.Error)</code></p>
 <p>
 Deocde decodes BSON data to value v.
@@ -216,7 +217,7 @@ To decode a BSON value into a nil interface value, the first type listed in
 the right hand column of the table above is used.
 </p>
 
-<h2 id="Encode">func <a href="https://github.com/garyburd/go-mongo/blob/master/bson_encode.go#L95">Encode</a></h2>
+<h2 id="Encode">func <a href="https://github.com/garyburd/go-mongo/blob/master/bson_encode.go#L94">Encode</a></h2>
 <p><code>func Encode(buf []byte, doc interface{}) (result []byte, err os.Error)</code></p>
 <p>
 Encode appends the BSON encoding of doc to buf and returns the new slice.
@@ -341,7 +342,7 @@ SplitNamespace splits a namespace into database name and collection name
 components.
 </p>
 
-<h2 id="StructFields">func <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L355">StructFields</a></h2>
+<h2 id="StructFields">func <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L359">StructFields</a></h2>
 <p><code>func StructFields(t reflect.Type) interface{}</code></p>
 <p>
 StructFields returns a MongoDB field specification for the given struct
@@ -574,7 +575,7 @@ the collection.
 
 
 
-    <h3 id="Dial">func <a href="https://github.com/garyburd/go-mongo/blob/master/connection.go#L48">Dial</a></h3>
+    <h3 id="Dial">func <a href="https://github.com/garyburd/go-mongo/blob/master/connection.go#L67">Dial</a></h3>
     <p><code>func Dial(addr string) (Conn, os.Error)</code></p>
     <p>
 Dial connects to server at addr.
@@ -672,11 +673,11 @@ More information:
 </p>
 
 <pre>type DBRef struct {
- // The target document&#39;s id.
- Id ObjectId &#34;$id&#34;
-
  // The target document&#39;s collection.
  Collection string &#34;$ref&#34;
+
+ // The target document&#39;s id.
+ Id ObjectId &#34;$id&#34;
 
  // The target document&#39;s database (optional).
  Database string &#34;$db/c&#34;
@@ -768,7 +769,7 @@ target type.
 
 
 
-    <h3 id="DecodeConvertError.String">func (*DecodeConvertError) <a href="https://github.com/garyburd/go-mongo/blob/master/bson_decode.go#L34">String</a></h3>
+    <h3 id="DecodeConvertError.String">func (*DecodeConvertError) <a href="https://github.com/garyburd/go-mongo/blob/master/bson_decode.go#L33">String</a></h3>
     <p><code>func (e *DecodeConvertError) String() string</code></p>
     
 
@@ -785,7 +786,7 @@ the input.
 
 
 
-    <h3 id="DecodeTypeError.String">func (*DecodeTypeError) <a href="https://github.com/garyburd/go-mongo/blob/master/bson_decode.go#L44">String</a></h3>
+    <h3 id="DecodeTypeError.String">func (*DecodeTypeError) <a href="https://github.com/garyburd/go-mongo/blob/master/bson_decode.go#L43">String</a></h3>
     <p><code>func (e *DecodeTypeError) String() string</code></p>
     
 
@@ -826,7 +827,7 @@ EncodeTypeError is the error indicating that Encode could not encode an input ty
 
 
 
-    <h3 id="EncodeTypeError.String">func (*EncodeTypeError) <a href="https://github.com/garyburd/go-mongo/blob/master/bson_encode.go#L37">String</a></h3>
+    <h3 id="EncodeTypeError.String">func (*EncodeTypeError) <a href="https://github.com/garyburd/go-mongo/blob/master/bson_encode.go#L36">String</a></h3>
     <p><code>func (e *EncodeTypeError) String() string</code></p>
     
 
@@ -880,8 +881,8 @@ FindOptions specifies options for the Conn.Find method.
  AwaitData bool
 
  // Stream the data down from the server full blast. Normally the server
- // waits for a &#34;get more&#34; message before sending a chunk of data to the
- // client.  With this option set, the server sends chunks of data without
+ // waits for a &#34;get more&#34; message before sending a batch of data to the
+ // client. With this option set, the server sends batches of data without
  // waiting for the &#34;get more&#34; messages. 
  Exhaust bool
 
@@ -1124,37 +1125,51 @@ Query represents a query to the database.
 
 
 
-    <h3 id="Query.BatchSize">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L91">BatchSize</a></h3>
+    <h3 id="Query.BatchSize">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L102">BatchSize</a></h3>
     <p><code>func (q *Query) BatchSize(batchSize int) *Query</code></p>
     <p>
 BatchSize sets the batch sized used for sending documents from the server to
 the client.
 </p>
 
-    <h3 id="Query.Count">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L135">Count</a></h3>
+    <h3 id="Query.Count">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L158">Count</a></h3>
     <p><code>func (q *Query) Count() (int64, os.Error)</code></p>
     <p>
 Count returns the number of documents that match the query. Limit and
 skip are considered in the count.
 </p>
 
-    <h3 id="Query.Cursor">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L191">Cursor</a></h3>
+    <h3 id="Query.Cursor">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L214">Cursor</a></h3>
     <p><code>func (q *Query) Cursor() (Cursor, os.Error)</code></p>
     <p>
 Cursor executes the query and returns a cursor over the results. Subsequent
 changes to the query object are ignored by the cursor.
 </p>
 
-    <h3 id="Query.Exhaust">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L123">Exhaust</a></h3>
+    <h3 id="Query.Exhaust">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L140">Exhaust</a></h3>
     <p><code>func (q *Query) Exhaust(exhaust bool) *Query</code></p>
-    
-    <h3 id="Query.Explain">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L195">Explain</a></h3>
+    <p>
+Exhaust specifies if the server should stream data to the client full blast.
+Normally the server waits for a &#34;get more&#34; message before sending a batch of
+data to the client.  With this option set, the server sends batches of data
+without waiting for the &#34;get more&#34; messages.
+</p>
+
+    <h3 id="Query.Explain">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L223">Explain</a></h3>
     <p><code>func (q *Query) Explain(result interface{}) os.Error</code></p>
-    
-    <h3 id="Query.Fields">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L103">Fields</a></h3>
+    <p>
+Explain returns an explanation of how the server will execute the query.
+</p>
+<p>
+More information:
+</p>
+<pre><a href="http://www.mongodb.org/display/DOCS/Optimization#Optimization-Explain">http://www.mongodb.org/display/DOCS/Optimization#Optimization-Explain</a>
+</pre>
+
+    <h3 id="Query.Fields">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L114">Fields</a></h3>
     <p><code>func (q *Query) Fields(fields interface{}) *Query</code></p>
     <p>
-Fields limits the fields in the returned documents.  Fields contains one or
+Fields limits the fields in the returned documents. Fields contains one or
 more elements, each of which is the name of a field that should be returned,
 and the integer value 1.
 </p>
@@ -1164,7 +1179,19 @@ More information:
 <pre><a href="http://www.mongodb.org/display/DOCS/Retrieving+a+Subset+of+Fields">http://www.mongodb.org/display/DOCS/Retrieving+a+Subset+of+Fields</a>
 </pre>
 
-    <h3 id="Query.Limit">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L73">Limit</a></h3>
+    <h3 id="Query.Hint">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L74">Hint</a></h3>
+    <p><code>func (q *Query) Hint(hint interface{}) *Query</code></p>
+    <p>
+Hint specifies an index hint. The index is specified by (key, direction)
+pairs. Direction is 1 for ascending order and -1 for descending order.
+</p>
+<p>
+More information:
+</p>
+<pre><a href="http://www.mongodb.org/display/DOCS/Optimization#Optimization-Hint">http://www.mongodb.org/display/DOCS/Optimization#Optimization-Hint</a>
+</pre>
+
+    <h3 id="Query.Limit">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L84">Limit</a></h3>
     <p><code>func (q *Query) Limit(limit int) *Query</code></p>
     <p>
 Limit specifies the number of documents to return from the query.
@@ -1175,16 +1202,20 @@ More information:
 <pre><a href="http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%7B%7Blimit%28%29%7D%7D">http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%7B%7Blimit%28%29%7D%7D</a>
 </pre>
 
-    <h3 id="Query.One">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L178">One</a></h3>
+    <h3 id="Query.One">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L201">One</a></h3>
     <p><code>func (q *Query) One(output interface{}) os.Error</code></p>
     <p>
 One executes the query and returns the first result.
 </p>
 
-    <h3 id="Query.PartialResults">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L118">PartialResults</a></h3>
+    <h3 id="Query.PartialResults">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L131">PartialResults</a></h3>
     <p><code>func (q *Query) PartialResults(ok bool) *Query</code></p>
-    
-    <h3 id="Query.Skip">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L84">Skip</a></h3>
+    <p>
+PartialResults specifies if mongos can reply with partial results when a
+shard is missing.
+</p>
+
+    <h3 id="Query.Skip">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L95">Skip</a></h3>
     <p><code>func (q *Query) Skip(skip int) *Query</code></p>
     <p>
 Skip specifies the number of documents the server should skip at the
@@ -1196,7 +1227,7 @@ More information:
 <pre><a href="http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%7B%7Bskip%28%29%7D%7D">http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%7B%7Bskip%28%29%7D%7D</a>
 </pre>
 
-    <h3 id="Query.SlaveOk">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L113">SlaveOk</a></h3>
+    <h3 id="Query.SlaveOk">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L124">SlaveOk</a></h3>
     <p><code>func (q *Query) SlaveOk(slaveOk bool) *Query</code></p>
     <p>
 SlaveOk specifies if query can be routed to a slave.
@@ -1211,13 +1242,22 @@ More information:
     <p><code>func (q *Query) Sort(sort interface{}) *Query</code></p>
     <p>
 Sort specifies the sort order for the result. The order is specified by
-(key, direction) pairs. The direction is 1 for ascending order and -1 for
+(key, direction) pairs. Direction is 1 for ascending order and -1 for
 descending order.
 </p>
 
-    <h3 id="Query.Tailable">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L128">Tailable</a></h3>
+    <h3 id="Query.Tailable">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L151">Tailable</a></h3>
     <p><code>func (q *Query) Tailable(tailable bool) *Query</code></p>
-    
+    <p>
+Tailable specifies if the server should not close the cursor when no more
+data is available.
+</p>
+<p>
+More informatoin:
+</p>
+<pre><a href="http://www.mongodb.org/display/DOCS/Tailable+Cursors">http://www.mongodb.org/display/DOCS/Tailable+Cursors</a>
+</pre>
+
 
 <h2 id="QuerySpec">type QuerySpec</h2>
 <p>
