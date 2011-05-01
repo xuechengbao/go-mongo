@@ -1,4 +1,4 @@
-// Copyright 2010 Gary Burd
+// Copyright 2011 Gary Burd
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
 // not use this file except in compliance with the License. You may obtain
@@ -15,10 +15,11 @@
 package mongo
 
 import (
-	"fmt"
+	"bufio"
 	"io"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -32,16 +33,34 @@ const (
 	queryAwaitData       = 1 << 5
 	queryExhaust         = 1 << 6
 	queryPartialResults  = 1 << 7
+	cursorNotFound       = 1 << 0
+	queryFailure         = 1 << 1
 )
 
-
 type connection struct {
-	conn      net.Conn
-	addr      string
+	conn          net.Conn
+	addr          string
+	requestId     uint32
+	cursors       map[uint32]*cursor
+	err           os.Error
+	buf           [1024]byte
+	responseLen   int
+	responseCount int
+	cursor        *cursor
+	br            *bufio.Reader
+}
+
+type cursor struct {
+	conn      *connection
+	namespace string
 	requestId uint32
-	cursors   map[uint32]*cursor
+	cursorId  uint64
+	limit     int
+	batchSize int
+	count     int
+	docs      [][]byte
+	flags     int
 	err       os.Error
-	buf       [1024]byte
 }
 
 // Dial connects to server at addr.
@@ -65,6 +84,7 @@ func (c *connection) connect() os.Error {
 		c.conn.Close()
 	}
 	c.conn = conn
+	c.br = bufio.NewReader(conn)
 	return nil
 }
 
@@ -82,14 +102,16 @@ func (c *connection) fatal(err os.Error) os.Error {
 }
 
 // Close closes the connection to the server.
-func (c *connection) Close() os.Error {
-	var err os.Error
+func (c *connection) Close() (err os.Error) {
 	if c.conn != nil {
 		err = c.conn.Close()
 		c.conn = nil
-		c.cursors = nil
-		c.err = os.NewError("mongo: connection closed")
 	}
+	c.cursors = nil
+	c.cursor = nil
+	c.responseCount = 0
+	c.responseLen = 0
+	c.err = os.NewError("mongo: connection closed")
 	return err
 }
 
@@ -97,7 +119,7 @@ func (c *connection) Error() os.Error {
 	return c.err
 }
 
-// send sets the messages length and writes the message to the socket.
+// send sets the message length and writes the message to the socket.
 func (c *connection) send(msg []byte) os.Error {
 	if c.err != nil {
 		return c.err
@@ -293,71 +315,149 @@ func (c *connection) killCursors(cursorIds ...uint64) os.Error {
 	return c.send(b)
 }
 
-type response struct {
-	flags uint32
-	count int
-	data  []byte
+// readDoc reads a single document from the connection.
+func (c *connection) readDoc(alloc bool) ([]byte, os.Error) {
+	if c.responseLen < 4 {
+		return nil, c.fatal(os.NewError("mongo: incomplete document in message"))
+	}
+	b, err := c.br.Peek(4)
+	if err != nil {
+		return nil, c.fatal(err)
+	}
+	n := int(wire.Uint32(b))
+	if c.responseLen < n {
+		return nil, c.fatal(os.NewError("mongo: incomplete document in message"))
+	}
+	var p []byte
+	if n > len(c.buf) || alloc {
+		p = make([]byte, n)
+	} else {
+		p = c.buf[:n]
+	}
+	_, err = io.ReadFull(c.br, p)
+	if err != nil {
+		return nil, c.fatal(err)
+	}
+	c.responseLen -= n
+	c.responseCount -= 1
+	if c.responseCount == 0 {
+		c.cursor = nil
+		if c.responseLen != 0 {
+			return nil, c.fatal(os.NewError("mongo: unexpected data in message."))
+		}
+	}
+	return p, nil
 }
 
-type cursor struct {
-	conn      *connection
-	namespace string
-	requestId uint32
-	cursorId  uint64
-	limit     int
-	batchSize int
-	count     int
-	resp      []response
-	flags     int
-	err       os.Error
+// skipDocs skips over unread documents in the current batch.
+func (c *connection) skipDocs() os.Error {
+	for c.responseLen > 0 {
+		n := c.responseLen
+		if n > len(c.buf) {
+			n = len(c.buf)
+		}
+		var err os.Error
+		n, err = c.br.Read(c.buf[0:n])
+		if err != nil {
+			return c.fatal(err)
+		}
+		c.responseLen -= n
+	}
+	c.responseLen = 0
+	c.responseCount = 0
+	c.cursor = nil
+	return nil
 }
 
 // receive recieves a single response from the server and delivers it to the appropriate cursor.
 func (c *connection) receive() os.Error {
+
 	if c.err != nil {
 		return c.err
 	}
 
-	if _, err := io.ReadFull(c.conn, c.buf[:36]); err != nil {
+	// Slurp up documents for current cursor.
+	for c.responseCount > 0 {
+		r := c.cursor
+		p, err := c.readDoc(true)
+		if err != nil {
+			return err
+		}
+		r.docs = append(r.docs, p)
+	}
+
+	// Read response message header.
+	if _, err := io.ReadFull(c.br, c.buf[:36]); err != nil {
 		return c.fatal(err)
 	}
 
-	messageLength := int32(wire.Uint32(c.buf[0:4]))
+	c.responseLen = int(wire.Uint32(c.buf[0:4]))
 	requestId := wire.Uint32(c.buf[4:8])
 	responseTo := wire.Uint32(c.buf[8:12])
 	opCode := int32(wire.Uint32(c.buf[12:16]))
 	flags := wire.Uint32(c.buf[16:20])
 	cursorId := wire.Uint64(c.buf[20:28])
 	//startingFrom := int32(wire.Uint32(c.buf[28:32]))
-	count := int(wire.Uint32(c.buf[32:36]))
-	data := make([]byte, messageLength-36)
-
-	if _, err := io.ReadFull(c.conn, data); err != nil {
-		return c.fatal(err)
-	}
+	c.responseCount = int(wire.Uint32(c.buf[32:36]))
+	c.responseLen -= 36
 
 	if opCode != 1 {
-		return c.fatal(os.NewError(fmt.Sprintf("mongo: unknown response opcode %d", opCode)))
+		return c.fatal(os.NewError("mongo: unknown response opcode " + strconv.Itoa(int(opCode))))
 	}
 
-	r, found := c.cursors[responseTo]
-	if !found {
+	r := c.cursors[responseTo]
+	if r == nil {
 		if cursorId != 0 {
-			c.killCursors(cursorId)
+			if err := c.killCursors(cursorId); err != nil {
+				return err
+			}
 		}
-		return nil
+		if err := c.skipDocs(); err != nil {
+			return err
+		}
+		return c.err
 	}
 
 	c.cursors[responseTo] = nil, false
-	r.requestId = 0
 	r.cursorId = cursorId
+	r.requestId = 0
 	if r.flags&queryExhaust != 0 && cursorId != 0 {
 		r.requestId = requestId
 		c.cursors[requestId] = r
 	}
 
-	r.resp = append(r.resp, response{flags: flags, count: count, data: data})
-	return nil
+	if flags&cursorNotFound != 0 {
+		r.fatal(os.NewError("mongo: cursor not found"))
+		if c.responseCount != 0 || c.responseLen != 0 {
+			return c.fatal(os.NewError("mongo: unexpected data after cursor not found."))
+		}
+	}
+
+	if flags&queryFailure != 0 {
+		if c.responseCount != 1 {
+			return c.fatal(os.NewError("mongo: unexpected number of docs for query failure."))
+		}
+		p, err := c.readDoc(false)
+		if err != nil {
+			return err
+		}
+		var m M
+		err = Decode(p, &m)
+		if err != nil {
+			r.fatal(err)
+		} else if s, ok := m["$err"].(string); ok {
+			r.fatal(os.NewError(s))
+		} else {
+			r.fatal(os.NewError("mongo: query failure"))
+		}
+		return c.err
+	}
+
+	if c.responseCount > 0 {
+		c.cursor = r
+	}
+
+	return c.err
 }
 
 func (r *cursor) numberToReturn() uint32 {
@@ -393,6 +493,24 @@ func (r *cursor) numberToReturn() uint32 {
 	return uint32(n)
 }
 
+func (r *cursor) Close() os.Error {
+	if r.err != nil {
+		return nil
+	}
+	if r.cursorId != 0 {
+		r.conn.killCursors(r.cursorId)
+	}
+	if r.conn.cursor == r {
+		r.conn.skipDocs()
+	}
+	if r.requestId != 0 && r.conn.cursors != nil {
+		r.conn.cursors[r.requestId] = nil, false
+	}
+	r.err = os.NewError("mongo: cursor closed")
+	r.conn = nil
+	return nil
+}
+
 func (r *cursor) fatal(err os.Error) os.Error {
 	if r.err == nil {
 		r.Close()
@@ -401,122 +519,87 @@ func (r *cursor) fatal(err os.Error) os.Error {
 	return err
 }
 
-func (r *cursor) Close() os.Error {
-	if r.err != nil {
-		return nil
-	}
-	if r.requestId != 0 && r.conn.err == nil {
-		r.conn.cursors[r.requestId] = nil, false
-	}
-	if r.cursorId != 0 && r.conn.err == nil {
-		r.conn.killCursors(r.cursorId)
-	}
-	r.err = os.NewError("mongo: cursor closed")
-	r.conn = nil
-	r.resp = nil
-	return nil
-}
-
-func (r *cursor) fill() os.Error {
-	if r.err != nil {
-		return r.err
-	}
-
-	if r.limit > 0 && r.count >= r.limit {
-		return r.fatal(EOF)
-	}
-
-	if len(r.resp) > 0 {
-		if r.resp[0].count > 0 {
-			return nil
-		}
-		r.resp[0].data = nil
-		r.resp = r.resp[1:]
-	}
-
-	if len(r.resp) == 0 {
-		if r.requestId == 0 {
-			if r.cursorId == 0 {
-				return r.fatal(EOF)
-			}
-			if r.flags&queryExhaust == 0 {
-				var err os.Error
-				err = r.conn.getMore(r)
-				if err != nil {
-					return r.fatal(err)
-				}
-			}
-		}
-		for len(r.resp) == 0 {
-			err := r.conn.receive()
-			if err != nil {
-				return r.fatal(err)
-			}
-		}
-	}
-
-	const (
-		cursorNotFound = 1 << 0
-		queryFailure   = 1 << 1
-	)
-
-	if r.resp[0].flags&cursorNotFound != 0 {
-		return r.fatal(os.NewError("mongo: cursor not found"))
-	}
-
-	if r.resp[0].flags&queryFailure != 0 {
-		var m map[string]interface{}
-		err := Decode(r.resp[0].data, &m)
-		if err != nil {
-			return r.fatal(err)
-		} else if s, ok := m["$err"].(string); ok {
-			return r.fatal(os.NewError(s))
-		} else {
-			return r.fatal(os.NewError("mongo: query failure"))
-		}
-	}
-
-	if r.resp[0].count == 0 {
-		r.resp[0].data = nil
-		r.resp = r.resp[1:]
-	}
-
-	if len(r.resp) == 0 && (r.cursorId == 0 || (r.flags&queryTailable) == 0) {
-		return r.fatal(EOF)
-	}
-
-	return nil
-}
-
 func (r *cursor) Error() os.Error {
 	return r.err
 }
 
 func (r *cursor) HasNext() bool {
-	if err := r.fill(); err != nil {
-		return err != EOF
+	// If HasNext() dectects an error other than EOF, then HasNext returns true
+	// so that the error is returned to the application on a subsequent call to
+	// Next().
+
+	if r.err != nil {
+		return r.err != EOF
 	}
-	return len(r.resp) > 0
+
+	if len(r.docs) > 0 || r.conn.cursor == r {
+		return true
+	}
+
+	if r.requestId == 0 {
+		if r.cursorId == 0 {
+			r.fatal(EOF)
+			return false
+		}
+		if err := r.conn.getMore(r); err != nil {
+			r.fatal(err)
+			return true
+		}
+	}
+
+	requestId := r.requestId
+	for r.requestId == requestId {
+		if err := r.conn.receive(); err != nil {
+			r.fatal(err)
+			break
+		}
+	}
+
+	switch {
+	case r.err != nil:
+		return r.err != EOF
+	case r.conn.cursor == r:
+		return true
+	case r.cursorId == 0:
+		r.fatal(EOF)
+		return false
+	}
+
+	// Tailable cursor case
+	return false
 }
 
 func (r *cursor) Next(value interface{}) os.Error {
-	if err := r.fill(); err != nil {
-		return err
-	}
-	if len(r.resp) == 0 {
-		// tailable, no data available now
+	if !r.HasNext() {
 		return EOF
 	}
-	if len(r.resp[0].data) < 4 {
-		return r.fatal(os.NewError("mongo: response data corrupted"))
+
+	if r.err != nil {
+		return r.err
 	}
-	n := int(wire.Uint32(r.resp[0].data[0:4]))
-	if n > len(r.resp[0].data) {
-		return r.fatal(os.NewError("mongo: response data corrupted"))
+
+	var p []byte
+	switch {
+	case len(r.docs) > 0:
+		p = r.docs[0]
+		r.docs[0] = nil
+		r.docs = r.docs[1:]
+	case r.conn.cursor == r:
+		var err os.Error
+		p, err = r.conn.readDoc(false)
+		if err != nil {
+			return r.fatal(err)
+		}
+	default:
+		panic("unexpected state")
 	}
-	err := Decode(r.resp[0].data[0:n], value)
-	r.resp[0].data = r.resp[0].data[n:]
-	r.resp[0].count -= 1
+
+	err := Decode(p, value)
+
 	r.count += 1
+	if r.limit > 0 && r.count >= r.limit {
+		r.fatal(EOF)
+	}
+
 	return err
 }

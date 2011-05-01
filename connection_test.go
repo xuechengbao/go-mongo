@@ -16,6 +16,7 @@ package mongo
 
 import (
 	"testing"
+	"os"
 )
 
 func dialAndDrop(t *testing.T, dbname, collectionName string) Collection {
@@ -68,6 +69,8 @@ func TestFindOptions(t *testing.T) {
 	c := dialAndDrop(t, "go-mongo-test", "test")
 	defer c.Conn.Close()
 
+	c.CreateIndex(D{{"x", 1}}, nil)
+
 	for i := 0; i < 200; i++ {
 		err := c.Insert(map[string]int{"x": i})
 		if err != nil {
@@ -79,6 +82,7 @@ func TestFindOptions(t *testing.T) {
 		r, err := c.Find(nil).
 			Limit(tt.limit).
 			BatchSize(tt.batchSize).
+			Sort(D{{"x", 1}}).
 			Exhaust(tt.exhaust).
 			Cursor()
 		if err != nil {
@@ -90,13 +94,93 @@ func TestFindOptions(t *testing.T) {
 			var m M
 			err = r.Next(&m)
 			if err != nil {
-				t.Error("findOptionsTest:", tt, "count:", count, "next err:", err)
+				t.Errorf("%+v, count=%d, next errror %v", tt, count, err)
+				break
+			}
+			if m["x"] != count {
+				t.Errorf("%+v, x=%d, want %d", tt, m["x"], count)
 				break
 			}
 			count += 1
 		}
 		if count != tt.expectedCount {
-			t.Error("findOptionsTest:", tt, "bad count:", count)
+			t.Errorf("%+v, count=%d, want %d", tt, count, tt.expectedCount)
+		}
+		r.Close()
+	}
+}
+
+var twoCursorTests = [][]int{
+	// 0: r[0].Next()
+	// 1: r[1].Next()
+	// 2: r[0].Close
+	// 3: r[1].Close
+	{0, 0, 0, 0, 0, 0},
+	{0, 1, 0, 1, 0, 1},
+	{1, 0, 1, 0, 1, 0},
+	{1, 1, 0, 0, 1, 1},
+	{0, 0, 1, 1, 0, 0},
+	{0, 0, 0, 1, 1, 1, 0, 0, 0},
+	{1, 1, 1, 0, 0, 0, 1, 1, 1},
+	{2, 1, 1, 1, 1, 1, 1},
+	{3, 0, 0, 0, 0, 0, 0},
+	{0, 2, 1, 1, 1, 1, 1},
+	{1, 3, 0, 0, 0, 0, 0},
+}
+
+func TestTwoCursors(t *testing.T) {
+	c := dialAndDrop(t, "go-mongo-test", "test")
+	defer c.Conn.Close()
+
+	c.CreateIndex(D{{"x", 1}}, nil)
+
+	for i := 0; i < 2; i++ {
+		for j := 0; j < 10; j++ {
+			err := c.Insert(map[string]int{"x": j, "r": i})
+			if err != nil {
+				t.Fatal("insert", err)
+			}
+		}
+	}
+
+Tests:
+	for _, tt := range twoCursorTests {
+
+		var r [2]Cursor
+
+		for i := 0; i < 2; i++ {
+			var err os.Error
+			r[i], err = c.Find(M{"r": i}).Sort(D{{"x", 1}}).BatchSize(2).Cursor()
+			if err != nil {
+				t.Fatal("find", err)
+			}
+		}
+
+		var count [2]int
+
+		for j, i := range tt {
+			var m M
+			if i >= 2 {
+				r[i-2].Close()
+				continue
+			}
+			err := r[i].Next(&m)
+			if err != nil {
+				t.Errorf("%v[%d] r[%d].Next() = %v", tt, j, i, err)
+				continue Tests
+			}
+			if m["r"] != i {
+				t.Errorf("%v[%d] m[r]=%v, want %d", tt, j, m["r"], i)
+				continue Tests
+			}
+			if m["x"] != count[i] {
+				t.Errorf("%v[%d] m[x]=%v, want %d", tt, j, m["x"], count[i])
+				continue Tests
+			}
+			count[i] += 1
+		}
+		for i := 0; i < 2; i++ {
+			r[i].Close()
 		}
 	}
 }
