@@ -12,18 +12,9 @@
 <ul>
 <li><a href="#package">Package</a>
 <li><a href="#variables">Variables</a>
-<li><a href="#Count">func Count</a>
 <li><a href="#Decode">func Decode</a>
 <li><a href="#Encode">func Encode</a>
-<li><a href="#FindAndRemove">func FindAndRemove</a>
-<li><a href="#FindAndUpdate">func FindAndUpdate</a>
-<li><a href="#FindOne">func FindOne</a>
 <li><a href="#IndexName">func IndexName</a>
-<li><a href="#LastError">func LastError</a>
-<li><a href="#RunCommand">func RunCommand</a>
-<li><a href="#SafeInsert">func SafeInsert</a>
-<li><a href="#SafeRemove">func SafeRemove</a>
-<li><a href="#SafeUpdate">func SafeUpdate</a>
 <li><a href="#SplitNamespace">func SplitNamespace</a>
 <li><a href="#StructFields">func StructFields</a>
 <li><a href="#A">type A</a>
@@ -76,10 +67,6 @@
             <ul>
     <li><a href="#DecodeTypeError.String">func (*DecodeTypeError) String</a>
             </ul>
-<li><a href="#Doc">type Doc</a>
-            <ul>
-    <li><a href="#Doc.Append">func (*Doc) Append</a>
-            </ul>
 <li><a href="#DocItem">type DocItem</a>
 <li><a href="#EncodeTypeError">type EncodeTypeError</a>
             <ul>
@@ -129,12 +116,6 @@
 <li><a href="#QuerySpec">type QuerySpec</a>
 <li><a href="#Regexp">type Regexp</a>
 <li><a href="#RemoveOptions">type RemoveOptions</a>
-<li><a href="#SafeConn">type SafeConn</a>
-            <ul>
-    <li><a href="#SafeConn.Insert">func (SafeConn) Insert</a>
-    <li><a href="#SafeConn.Remove">func (SafeConn) Remove</a>
-    <li><a href="#SafeConn.Update">func (SafeConn) Update</a>
-            </ul>
 <li><a href="#Symbol">type Symbol</a>
 <li><a href="#Timestamp">type Timestamp</a>
 <li><a href="#UpdateOptions">type UpdateOptions</a>
@@ -175,12 +156,6 @@ var (
 <pre>
 var ErrEOD = os.NewError(&#34;bson: unexpected end of data when parsing BSON&#34;)
 </pre>
-
-<h2 id="Count">func <a href="https://github.com/garyburd/go-mongo/blob/master/deprecated.go#L102">Count</a></h2>
-<p><code>func Count(conn Conn, namespace string, query interface{}, options *FindOptions) (int64, os.Error)</code></p>
-<p>
-Count is deprected. Use Collection{Conn: conn, Namespace:namespace}.Find(query).Count() instead.
-</p>
 
 <h2 id="Decode">func <a href="https://github.com/garyburd/go-mongo/blob/master/bson_decode.go#L74">Decode</a></h2>
 <p><code>func Decode(data []byte, v interface{}) (err os.Error)</code></p>
@@ -281,58 +256,10 @@ BSON cannot represent cyclic data structure and Encode does not handle them.
 Passing cyclic structures to Encode will result in an infinite recursion.
 </p>
 
-<h2 id="FindAndRemove">func <a href="https://github.com/garyburd/go-mongo/blob/master/deprecated.go#L125">FindAndRemove</a></h2>
-<p><code>func FindAndRemove(conn Conn, namespace string, selector interface{}, options *FindAndModifyOptions, result interface{}) os.Error</code></p>
-<p>
-FindAndRemove is deprecated. Use the Collection FindAndRemove method instead.
-</p>
-
-<h2 id="FindAndUpdate">func <a href="https://github.com/garyburd/go-mongo/blob/master/deprecated.go#L111">FindAndUpdate</a></h2>
-<p><code>func FindAndUpdate(conn Conn, namespace string, selector, update interface{}, options *FindAndModifyOptions, result interface{}) os.Error</code></p>
-<p>
-FindAndUpdate is deprecated. Use the Collection FindAndUpdate method instead.
-</p>
-
-<h2 id="FindOne">func <a href="https://github.com/garyburd/go-mongo/blob/master/deprecated.go#L29">FindOne</a></h2>
-<p><code>func FindOne(conn Conn, namespace string, query interface{}, options *FindOptions, result interface{}) os.Error</code></p>
-<p>
-FindOne is deprecated. Use Collection{conn, namespace}.Find(query).One(result) instead.
-</p>
-
 <h2 id="IndexName">func <a href="https://github.com/garyburd/go-mongo/blob/master/collection.go#L116">IndexName</a></h2>
 <p><code>func IndexName(keys D) string</code></p>
 <p>
 IndexName returns the standard name for an index with keys.
-</p>
-
-<h2 id="LastError">func <a href="https://github.com/garyburd/go-mongo/blob/master/deprecated.go#L44">LastError</a></h2>
-<p><code>func LastError(conn Conn, namespace string, cmd interface{}) os.Error</code></p>
-<p>
-LastError is deprecated. Use Database{Conn: conn, Name: dbname}.LastError(cmd) instead.
-</p>
-
-<h2 id="RunCommand">func <a href="https://github.com/garyburd/go-mongo/blob/master/deprecated.go#L38">RunCommand</a></h2>
-<p><code>func RunCommand(conn Conn, namespace string, cmd Doc, result interface{}) os.Error</code></p>
-<p>
-RunCommand is deprecated. Use Database{conn, dbname}.Run(cmd, result) instead.
-</p>
-
-<h2 id="SafeInsert">func <a href="https://github.com/garyburd/go-mongo/blob/master/deprecated.go#L57">SafeInsert</a></h2>
-<p><code>func SafeInsert(conn Conn, namespace string, errorCmd interface{}, documents ...interface{}) os.Error</code></p>
-<p>
-SafeInsert is deprecated.
-</p>
-
-<h2 id="SafeRemove">func <a href="https://github.com/garyburd/go-mongo/blob/master/deprecated.go#L67">SafeRemove</a></h2>
-<p><code>func SafeRemove(conn Conn, namespace string, errorCmd interface{}, selector interface{}, options *RemoveOptions) os.Error</code></p>
-<p>
-SafeRemove is deprecated.
-</p>
-
-<h2 id="SafeUpdate">func <a href="https://github.com/garyburd/go-mongo/blob/master/deprecated.go#L62">SafeUpdate</a></h2>
-<p><code>func SafeUpdate(conn Conn, namespace string, errorCmd interface{}, selector, update interface{}, options *UpdateOptions) os.Error</code></p>
-<p>
-SafeUpdate is deprecated.
 </p>
 
 <h2 id="SplitNamespace">func <a href="https://github.com/garyburd/go-mongo/blob/master/database.go#L28">SplitNamespace</a></h2>
@@ -788,20 +715,6 @@ the input.
 
     <h3 id="DecodeTypeError.String">func (*DecodeTypeError) <a href="https://github.com/garyburd/go-mongo/blob/master/bson_decode.go#L43">String</a></h3>
     <p><code>func (e *DecodeTypeError) String() string</code></p>
-    
-
-<h2 id="Doc">type Doc</h2>
-<p>
-Doc is deprecated. Use D instead.
-</p>
-
-<pre>type Doc []DocItem</pre>
-
-
-
-
-    <h3 id="Doc.Append">func (*Doc) <a href="https://github.com/garyburd/go-mongo/blob/master/deprecated.go#L24">Append</a></h3>
-    <p><code>func (d *Doc) Append(name string, value interface{})</code></p>
     
 
 <h2 id="DocItem">type DocItem</h2>
@@ -1333,33 +1246,6 @@ RemoveOptions specifies options for the Conn.Remove method.
 
 
 
-
-<h2 id="SafeConn">type SafeConn</h2>
-<p>
-SafeConn is deprecated.
-</p>
-
-<pre>type SafeConn struct {
- // The connecion to wrap.
- Conn
-
- // The command document used to fetch the last error. If cmd is nil, then
- // the command {&#34;getLastError&#34;: 1} is used as the command.
- Cmd interface{}
-}</pre>
-
-
-
-
-    <h3 id="SafeConn.Insert">func (SafeConn) <a href="https://github.com/garyburd/go-mongo/blob/master/deprecated.go#L93">Insert</a></h3>
-    <p><code>func (c SafeConn) Insert(namespace string, documents ...interface{}) os.Error</code></p>
-    
-    <h3 id="SafeConn.Remove">func (SafeConn) <a href="https://github.com/garyburd/go-mongo/blob/master/deprecated.go#L97">Remove</a></h3>
-    <p><code>func (c SafeConn) Remove(namespace string, selector interface{}, options *RemoveOptions) os.Error</code></p>
-    
-    <h3 id="SafeConn.Update">func (SafeConn) <a href="https://github.com/garyburd/go-mongo/blob/master/deprecated.go#L89">Update</a></h3>
-    <p><code>func (c SafeConn) Update(namespace string, selector, update interface{}, options *UpdateOptions) os.Error</code></p>
-    
 
 <h2 id="Symbol">type Symbol</h2>
 <p>
