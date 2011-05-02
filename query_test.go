@@ -60,3 +60,30 @@ func TestQuery(t *testing.T) {
 		t.Fatal("expect max value for descending sort")
 	}
 }
+
+func TestFill(t *testing.T) {
+	c := dialAndDrop(t, "go-mongo-test", "test")
+	defer c.Conn.Close()
+
+	for i := 0; i < 10; i++ {
+		err := c.Insert(map[string]int{"x": i})
+		if err != nil {
+			t.Fatal("insert", err)
+		}
+	}
+
+	p := make([]M, 11)
+	n, err := c.Find(nil).Fill(p)
+	if err != nil {
+		t.Fatalf("fill() = %v", err)
+	}
+	if n != 10 {
+		t.Fatalf("n=%d, want 10", n)
+	}
+
+	for i, m := range p[:n] {
+		if m["x"] != i {
+			t.Fatalf("p[%d][x]=%v, want %i", i, m["x"], i)
+		}
+	}
+}

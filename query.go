@@ -16,6 +16,7 @@ package mongo
 
 import (
 	"os"
+	"reflect"
 )
 
 // Query represents a query to the database. 
@@ -213,6 +214,29 @@ func (q *Query) One(output interface{}) os.Error {
 // changes to the query object are ignored by the cursor.
 func (q *Query) Cursor() (Cursor, os.Error) {
 	return q.Conn.Find(q.Namespace, q.simplifyQuery(), &q.Options)
+}
+
+// Fill executes the query and copies up to len(slice) documents to output. The
+// elements of slice must be valid document types (struct, map with string key)
+// or pointers to valid document types. The function returns the number of
+// documents in the result set.
+func (q *Query) Fill(slice interface{}) (n int, err os.Error) {
+	v := reflect.ValueOf(slice)
+	if q.Options.Limit == 0 || q.Options.Limit > v.Len() {
+		q.Options.Limit = v.Len()
+	}
+	cursor, err := q.Conn.Find(q.Namespace, q.simplifyQuery(), &q.Options)
+	if err != nil {
+		return 0, err
+	}
+	defer cursor.Close()
+	i := 0
+	for ; cursor.HasNext(); i++ {
+		if err := cursor.Next(v.Index(i)); err != nil {
+			return i, err
+		}
+	}
+	return i, nil
 }
 
 // Explain returns an explanation of how the server will execute the query.
