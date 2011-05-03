@@ -51,14 +51,14 @@ func (e *DecodeTypeError) String() string {
 // needed. The following conversions from BSON types to GO types are supported:
 //
 //      BSON                -> Go
-//      32-bit integer      -> int, int32, int64, float32, float64, bool
-//      64-bit integer      -> int64, int, int32, float32, float64, bool
+//      Integer32           -> signed and unsigned integers, floats, bool
+//      Integer64           -> signed and unsigned integers, floats, bool
 //      Array               -> []interface{}, other slice types
 //      Binary              -> []byte
 //      Boolean             -> bool
 //      Datetime            -> mongo.Datetime, int64
 //      Document            -> map[string]interface{}, struct types
-//      Double              -> float64, float32, int, int32, int64, bool
+//      Double              -> signed and unsigned integers, floats, bool
 //      MinValue, MaxValue  -> mongo.MinMax
 //      ObjectID            -> mongo.ObjectId
 //      Symbol              -> mongo.Symbol, string
@@ -263,6 +263,26 @@ func decodeInt(d *decodeState, kind int, v reflect.Value) {
 		return
 	}
 	v.SetInt(n)
+}
+
+func decodeUint(d *decodeState, kind int, v reflect.Value) {
+	var n uint64
+	switch kind {
+	default:
+		d.saveErrorAndSkip(kind, v.Type())
+		return
+	case kindInt64, kindTimestamp, kindDateTime:
+		n = uint64(d.scanInt64())
+	case kindInt32:
+		n = uint64(d.scanInt32())
+	case kindFloat:
+		n = uint64(d.scanFloat())
+	}
+	if v.OverflowUint(n) {
+		d.saveError(&DecodeConvertError{kind, v.Type()})
+		return
+	}
+	v.SetUint(n)
 }
 
 func decodeTimestamp(d *decodeState, kind int, v reflect.Value) {
@@ -597,9 +617,16 @@ func init() {
 		reflect.Bool:      decodeBool,
 		reflect.Float32:   decodeFloat,
 		reflect.Float64:   decodeFloat,
+		reflect.Int8:      decodeInt,
+		reflect.Int16:     decodeInt,
 		reflect.Int32:     decodeInt,
 		reflect.Int64:     decodeInt,
 		reflect.Int:       decodeInt,
+		reflect.Uint8:     decodeUint,
+		reflect.Uint16:    decodeUint,
+		reflect.Uint32:    decodeUint,
+		reflect.Uint64:    decodeUint,
+		reflect.Uint:      decodeUint,
 		reflect.Interface: decodeInterface,
 		reflect.Map:       decodeMap,
 		reflect.String:    decodeString,

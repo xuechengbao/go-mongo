@@ -26,6 +26,7 @@ var (
 	typeDoc      = reflect.TypeOf(Doc{})
 	typeBSONData = reflect.TypeOf(BSONData{})
 	idKey        = reflect.ValueOf("_id")
+	itoas        = [...]string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}
 )
 
 // EncodeTypeError is the error indicating that Encode could not encode an input type.
@@ -48,9 +49,9 @@ type encodeState struct {
 //
 // Struct values encode as BSON documents. The struct field tag specifies the
 // encoded name of the field and encoding options. The options follow the name
-// and are proceeded by a '/'.  If the name is not specified in the tag, then
+// and are proceeded by a '/'. If the name is not specified in the tag, then
 // the field name defaults to the structure field name. Unexported fields and
-// fields equal to nil are note encoded.  The following option is supported:
+// fields equal to nil are not encoded. The following option is supported:
 //
 //  /c  If the field is the zero value, then the field is not 
 //      written to the encoding. 
@@ -70,11 +71,10 @@ type encodeState struct {
 //      bool                -> Boolean
 //      float32             -> Double
 //      float64             -> Double
-//      int                 -> 32-bit Integer
-//      int8, int16, int32  -> 32-bit Integer
-//      int64               -> 64-bit Integer
-//      uint8, uint16       -> 32-bit Integer
-//      uint, uint32        -> 64-bit Integer
+//      int, uint, uint32   -> Integer32 if value fits in int32, else Integer64
+//      int8, int16, int32  -> Integer32
+//      uint8, uint16       -> Integer32
+//      int64, uint64       -> Integer64
 //      string              -> String
 //      []byte              -> Binary data
 //      mongo.Code          -> Javascript code
@@ -222,17 +222,48 @@ func encodeBool(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
 	}
 }
 
-func encodeInt32(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
+func encodeInt(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
 	i := v.Int()
 	if i == 0 && fi.conditional {
 		return
 	}
-	e.writeKindName(kindInt32, name)
-	e.WriteUint32(uint32(i))
+	if i >= math.MinInt32 && i <= math.MaxInt32 {
+		e.writeKindName(kindInt32, name)
+		e.WriteUint32(uint32(i))
+	} else {
+		e.writeKindName(kindInt64, name)
+		e.WriteUint64(uint64(i))
+	}
 }
 
-func encodeUint32(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
-	i := v.Uint()
+func encodeUint16(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
+	u := v.Uint()
+	if u == 0 && fi.conditional {
+		return
+	}
+	e.writeKindName(kindInt32, name)
+	e.WriteUint32(uint32(u))
+}
+
+func encodeUint(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
+	u := v.Uint()
+	if u == 0 && fi.conditional {
+		return
+	}
+	if int64(u) < 0 {
+		abort(os.NewError("bson: uint value does not fit in int64"))
+	}
+	if u <= math.MaxInt32 {
+		e.writeKindName(kindInt32, name)
+		e.WriteUint32(uint32(u))
+	} else {
+		e.writeKindName(kindInt64, name)
+		e.WriteUint64(uint64(u))
+	}
+}
+
+func encodeInt32(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
+	i := v.Int()
 	if i == 0 && fi.conditional {
 		return
 	}
@@ -250,12 +281,15 @@ func encodeInt64(e *encodeState, kind int, name string, fi *fieldInfo, v reflect
 }
 
 func encodeUint64(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
-	i := v.Uint()
-	if i == 0 && fi.conditional {
+	u := v.Uint()
+	if u == 0 && fi.conditional {
 		return
 	}
+	if int64(u) < 0 {
+		abort(os.NewError("bson: uint64 value does not fit in int64"))
+	}
 	e.writeKindName(kindInt64, name)
-	e.WriteUint64(i)
+	e.WriteUint64(u)
 }
 
 func encodeFloat(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
@@ -387,22 +421,21 @@ func encodeSlice(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
 	if v.IsNil() {
 		return
 	}
-	e.writeKindName(kindArray, name)
-	offset := e.beginDoc()
-	n := v.Len()
-	for i := 0; i < n; i++ {
-		e.encodeValue(strconv.Itoa(i), defaultFieldInfo, v.Index(i))
-	}
-	e.WriteByte(0)
-	e.endDoc(offset)
+	encodeArray(e, name, fi, v)
 }
 
 func encodeArray(e *encodeState, name string, fi *fieldInfo, v reflect.Value) {
 	e.writeKindName(kindArray, name)
 	offset := e.beginDoc()
 	n := v.Len()
-	for i := 0; i < n; i++ {
-		e.encodeValue(strconv.Itoa(i), defaultFieldInfo, v.Index(i))
+	if n < len(itoas) {
+		for i, k := range itoas[:n] {
+			e.encodeValue(k, defaultFieldInfo, v.Index(i))
+		}
+	} else {
+		for i := 0; i < n; i++ {
+			e.encodeValue(strconv.Itoa(i), defaultFieldInfo, v.Index(i))
+		}
 	}
 	e.WriteByte(0)
 	e.endDoc(offset)
@@ -430,11 +463,12 @@ func init() {
 		reflect.Int8:    encodeInt32,
 		reflect.Int16:   encodeInt32,
 		reflect.Int32:   encodeInt32,
-		reflect.Int:     encodeInt32,
-		reflect.Uint8:   encodeUint32,
-		reflect.Uint16:  encodeUint32,
-		reflect.Uint32:  encodeUint64,
-		reflect.Uint:    encodeUint64,
+		reflect.Int:     encodeInt,
+		reflect.Uint8:   encodeUint16,
+		reflect.Uint16:  encodeUint16,
+		reflect.Uint32:  encodeUint,
+		reflect.Uint64:  encodeUint64,
+		reflect.Uint:    encodeUint,
 		reflect.Int64: func(e *encodeState, name string, fi *fieldInfo, value reflect.Value) {
 			encodeInt64(e, kindInt64, name, fi, value)
 		},
