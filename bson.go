@@ -150,6 +150,12 @@ type BSONData struct {
 	Data []byte
 }
 
+// Deocde decodes bd to v. See the Decode function for more information about
+// BSON decoding. 
+func (bd BSONData) Decode(v interface{}) os.Error {
+	return decodeInternal(bd.Kind, bd.Data, v)
+}
+
 // Symbol represents a BSON symbol.
 type Symbol string
 

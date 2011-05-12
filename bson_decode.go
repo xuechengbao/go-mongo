@@ -72,6 +72,11 @@ func (e *DecodeTypeError) String() string {
 // To decode a BSON value into a nil interface value, the first type listed in
 // the right hand column of the table above is used.
 func Decode(data []byte, v interface{}) (err os.Error) {
+	return decodeInternal(kindDocument, data, v)
+}
+
+// decodeInternal decodes BSON data with given kind to v.
+func decodeInternal(kind int, data []byte, v interface{}) (err os.Error) {
 	defer handleAbort(&err)
 	value, ok := v.(reflect.Value)
 	if !ok {
@@ -92,7 +97,7 @@ func Decode(data []byte, v interface{}) (err os.Error) {
 	}
 
 	d := decodeState{data: data}
-	d.decodeValue(kindDocument, value)
+	d.decodeValue(kind, value)
 	return d.savedError
 }
 

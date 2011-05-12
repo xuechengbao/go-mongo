@@ -160,5 +160,5 @@ func findAndModify(conn Conn, namespace string, cmd Doc, options *FindAndModifyO
 	if err := r.Error(); err != nil {
 		return err
 	}
-	return Decode(r.Value.Data, result)
+	return r.Value.Decode(result)
 }

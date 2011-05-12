@@ -273,5 +273,5 @@ func (c Collection) findAndModify(cmd interface{}, result interface{}) os.Error 
 	if err := r.Error(); err != nil {
 		return err
 	}
-	return Decode(r.Value.Data, result)
+	return r.Value.Decode(result)
 }

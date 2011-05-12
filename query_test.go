@@ -87,3 +87,35 @@ func TestFill(t *testing.T) {
 		}
 	}
 }
+
+func Distinct(t *testing.T) {
+	c := dialAndDrop(t, "go-mongo-test", "test")
+	defer c.Conn.Close()
+
+	for i := 0; i < 10; i++ {
+		err := c.Insert(map[string]int{"x": i, "filter": i % 2})
+		if err != nil {
+			t.Fatal("insert", err)
+		}
+	}
+
+	var r []int
+	err := c.Find(nil).Distinct("x", &r)
+	if err != nil {
+		t.Fatal("Distinct returned error", err)
+	}
+
+	if len(r) != 10 {
+		t.Fatalf("Distinct returned %d results, want 10", len(r))
+	}
+
+	r = nil
+	err = c.Find(M{"filter": 1}).Distinct("x", &r)
+	if err != nil {
+		t.Fatal("Distinct w/ filter returned error", err)
+	}
+
+	if len(r) != 5 {
+		t.Fatalf("Distinct  w/ filterreturned %d results, want 5", len(r))
+	}
+}

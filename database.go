@@ -112,7 +112,7 @@ func (db Database) Run(cmd interface{}, result interface{}) os.Error {
 	}
 
 	if result != nil {
-		if err := Decode(d.Data, result); err != nil {
+		if err := d.Decode(result); err != nil {
 			return err
 		}
 	}

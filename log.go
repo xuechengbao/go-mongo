@@ -145,7 +145,7 @@ func (r logCursor) Next(value interface{}) os.Error {
 	var m M
 	if err == nil {
 		err = Decode(bd.Data, value)
-		Decode(bd.Data, &m)
+		bd.Decode(&m)
 	}
 	log.Printf("%d.Next() (%v, %v)", r.id, m, err)
 	return err

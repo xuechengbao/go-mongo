@@ -154,6 +154,16 @@ func (q *Query) Tailable(tailable bool) *Query {
 	return q
 }
 
+// commandOptions returns copy of options with values set appropriately for
+// running a command.
+func commandOptions(options *FindOptions) *FindOptions {
+	o := *options
+	o.BatchSize = -1
+	o.Limit = 0
+	o.Skip = 0
+	return &o
+}
+
 // Count returns the number of documents that match the query. Limit and
 // skip are considered in the count.
 func (q *Query) Count() (int64, os.Error) {
@@ -168,9 +178,7 @@ func (q *Query) Count() (int64, os.Error) {
 	if q.Options.Skip != 0 {
 		cmd.Append("skip", q.Options.Skip)
 	}
-	options := q.Options
-	options.BatchSize = -1
-	cursor, err := q.Conn.Find(dbname+".$cmd", cmd, &options)
+	cursor, err := q.Conn.Find(dbname+".$cmd", cmd, commandOptions(&q.Options))
 	if err != nil {
 		return 0, err
 	}
@@ -257,4 +265,34 @@ func (q *Query) Explain(result interface{}) os.Error {
 	}
 	defer cursor.Close()
 	return cursor.Next(result)
+}
+
+// Distinct returns the distinct value for key among the docouments in the
+// result set for this query.
+//
+// More information:
+//
+//  http://www.mongodb.org/display/DOCS/Aggregation#Aggregation-Distinct
+func (q *Query) Distinct(key interface{}, result interface{}) os.Error {
+	dbname, cname := SplitNamespace(q.Namespace)
+	cmd := D{{"distinct", cname}}
+	if q.Spec.Query != nil {
+		cmd.Append("query", &q.Spec.Query)
+	}
+	cursor, err := q.Conn.Find(dbname+".$cmd", cmd, commandOptions(&q.Options))
+	if err != nil {
+		return err
+	}
+	defer cursor.Close()
+	var r struct {
+		CommandResponse
+		Values BSONData "values"
+	}
+	if err := cursor.Next(&r); err != nil {
+		return err
+	}
+	if err := r.Error(); err != nil {
+		return err
+	}
+	return r.Values.Decode(result)
 }
