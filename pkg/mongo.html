@@ -19,6 +19,9 @@
 <li><a href="#StructFields">func StructFields</a>
 <li><a href="#A">type A</a>
 <li><a href="#BSONData">type BSONData</a>
+            <ul>
+    <li><a href="#BSONData.Decode">func (BSONData) Decode</a>
+            </ul>
 <li><a href="#Code">type Code</a>
 <li><a href="#CodeWithScope">type CodeWithScope</a>
 <li><a href="#Collection">type Collection</a>
@@ -101,6 +104,7 @@
     <li><a href="#Query.BatchSize">func (*Query) BatchSize</a>
     <li><a href="#Query.Count">func (*Query) Count</a>
     <li><a href="#Query.Cursor">func (*Query) Cursor</a>
+    <li><a href="#Query.Distinct">func (*Query) Distinct</a>
     <li><a href="#Query.Exhaust">func (*Query) Exhaust</a>
     <li><a href="#Query.Explain">func (*Query) Explain</a>
     <li><a href="#Query.Fields">func (*Query) Fields</a>
@@ -269,7 +273,7 @@ SplitNamespace splits a namespace into database name and collection name
 components.
 </p>
 
-<h2 id="StructFields">func <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L359">StructFields</a></h2>
+<h2 id="StructFields">func <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L365">StructFields</a></h2>
 <p><code>func StructFields(t reflect.Type) interface{}</code></p>
 <p>
 StructFields returns a MongoDB field specification for the given struct
@@ -302,6 +306,13 @@ copy raw data into or out of a BSON encoding.
 
 
 
+
+    <h3 id="BSONData.Decode">func (BSONData) <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L155">Decode</a></h3>
+    <p><code>func (bd BSONData) Decode(v interface{}) os.Error</code></p>
+    <p>
+Deocde decodes bd to v. See the Decode function for more information about
+BSON decoding.
+</p>
 
 
 <h2 id="Code">type Code</h2>
@@ -580,7 +591,7 @@ in a document is important.
 
 
 
-    <h3 id="D.Append">func (*D) <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L170">Append</a></h3>
+    <h3 id="D.Append">func (*D) <a href="https://github.com/garyburd/go-mongo/blob/master/bson.go#L176">Append</a></h3>
     <p><code>func (d *D) Append(name string, value interface{})</code></p>
     <p>
 Append adds an item to the document..
@@ -1045,19 +1056,31 @@ BatchSize sets the batch sized used for sending documents from the server to
 the client.
 </p>
 
-    <h3 id="Query.Count">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L159">Count</a></h3>
+    <h3 id="Query.Count">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L169">Count</a></h3>
     <p><code>func (q *Query) Count() (int64, os.Error)</code></p>
     <p>
 Count returns the number of documents that match the query. Limit and
 skip are considered in the count.
 </p>
 
-    <h3 id="Query.Cursor">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L215">Cursor</a></h3>
+    <h3 id="Query.Cursor">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L223">Cursor</a></h3>
     <p><code>func (q *Query) Cursor() (Cursor, os.Error)</code></p>
     <p>
 Cursor executes the query and returns a cursor over the results. Subsequent
 changes to the query object are ignored by the cursor.
 </p>
+
+    <h3 id="Query.Distinct">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L276">Distinct</a></h3>
+    <p><code>func (q *Query) Distinct(key interface{}, result interface{}) os.Error</code></p>
+    <p>
+Distinct returns the distinct value for key among the docouments in the
+result set for this query.
+</p>
+<p>
+More information:
+</p>
+<pre><a href="http://www.mongodb.org/display/DOCS/Aggregation#Aggregation-Distinct">http://www.mongodb.org/display/DOCS/Aggregation#Aggregation-Distinct</a>
+</pre>
 
     <h3 id="Query.Exhaust">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L141">Exhaust</a></h3>
     <p><code>func (q *Query) Exhaust(exhaust bool) *Query</code></p>
@@ -1068,7 +1091,7 @@ data to the client.  With this option set, the server sends batches of data
 without waiting for the &#34;get more&#34; messages.
 </p>
 
-    <h3 id="Query.Explain">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L247">Explain</a></h3>
+    <h3 id="Query.Explain">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L255">Explain</a></h3>
     <p><code>func (q *Query) Explain(result interface{}) os.Error</code></p>
     <p>
 Explain returns an explanation of how the server will execute the query.
@@ -1092,7 +1115,7 @@ More information:
 <pre><a href="http://www.mongodb.org/display/DOCS/Retrieving+a+Subset+of+Fields">http://www.mongodb.org/display/DOCS/Retrieving+a+Subset+of+Fields</a>
 </pre>
 
-    <h3 id="Query.Fill">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L223">Fill</a></h3>
+    <h3 id="Query.Fill">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L231">Fill</a></h3>
     <p><code>func (q *Query) Fill(slice interface{}) (n int, err os.Error)</code></p>
     <p>
 Fill executes the query and copies up to len(slice) documents to output. The
@@ -1124,7 +1147,7 @@ More information:
 <pre><a href="http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%7B%7Blimit%28%29%7D%7D">http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%7B%7Blimit%28%29%7D%7D</a>
 </pre>
 
-    <h3 id="Query.One">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L202">One</a></h3>
+    <h3 id="Query.One">func (*Query) <a href="https://github.com/garyburd/go-mongo/blob/master/query.go#L210">One</a></h3>
     <p><code>func (q *Query) One(output interface{}) os.Error</code></p>
     <p>
 One executes the query and returns the first result.
